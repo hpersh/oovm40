@@ -1,0 +1,429 @@
+///////////////////////////////////////////////////////////////////////////
+//
+// Module to classify character strings
+//
+///////////////////////////////////////////////////////////////////////////
+
+#control   = 0x01;	// Character is a control character
+#printable = 0x02;	// Character is printable
+#graph     = 0x04;	// Character is printable, and not a space
+#space     = 0x08;	// Character is white space
+#blank     = 0x10;	// Character is a space or tab
+#punct     = 0x20;	// Character is punctuation
+#alpha     = 0x40;	// Character is alphabetic
+#upper     = 0x80;	// Character is an upper-case letter
+#lower     = 0x100;	// Character is a lower-case letter
+#digit     = 0x200;	// Character is a decimal digit
+#xdigit    = 0x400;	// Character is a hex digit
+
+#__map = `[
+// 0x00
+#control,
+
+// 0x01
+#control,
+
+// 0x02
+#control,
+
+// 0x03
+#control,
+
+// 0x04
+#control,
+
+// 0x05
+#control,
+
+// 0x06
+#control,
+
+// 0x07
+#control,
+
+// 0x08
+#control,
+
+// 0x09
+#control | #space | #blank,
+
+// 0x0a
+#control | #space,
+
+// 0x0b
+#control | #space,
+
+// 0x0c
+#control | #space,
+
+// 0x0d
+#control | #space,
+
+// 0x0e
+#control,
+
+// 0x0f
+#control,
+
+// 0x10
+#control,
+
+// 0x11
+#control,
+
+// 0x12
+#control,
+
+// 0x13
+#control,
+
+// 0x14
+#control,
+
+// 0x15
+#control,
+
+// 0x16
+#control,
+
+// 0x17
+#control,
+
+// 0x18
+#control,
+
+// 0x19
+#control,
+
+// 0x1a
+#control,
+
+// 0x1b
+#control,
+
+// 0x1c
+#control,
+
+// 0x1d
+#control,
+
+// 0x1e
+#control,
+
+// 0x1f
+#control,
+
+// 0x20  ' '
+#printable | #space | #blank,
+
+// 0x21  '!'
+#printable | #graph | #punct,
+
+// 0x22  '"'
+#printable | #graph | #punct,
+
+// 0x23  '#'
+#printable | #graph | #punct,
+
+// 0x24  '$'
+#printable | #graph | #punct,
+
+// 0x25  '%'
+#printable | #graph | #punct,
+
+// 0x26  '&'
+#printable | #graph | #punct,
+
+// 0x27  '\''
+#printable | #graph | #punct,
+
+// 0x28  '('
+#printable | #graph | #punct,
+
+// 0x29  ')'
+#printable | #graph | #punct,
+
+// 0x2a  '*'
+#printable | #graph | #punct,
+
+// 0x2b  '+'
+#printable | #graph | #punct,
+
+// 0x2c  ','
+#printable | #graph | #punct,
+
+// 0x2d  '-'
+#printable | #graph | #punct,
+
+// 0x2e  '.'
+#printable | #graph | #punct,
+
+// 0x2f  '/'
+#printable | #graph | #punct,
+
+// 0x30  '0'
+#printable | #graph | #digit | #xdigit,
+
+// 0x31  '1'
+#printable | #graph | #digit | #xdigit,
+
+// 0x32  '2'
+#printable | #graph | #digit | #xdigit,
+
+// 0x33  '3'
+#printable | #graph | #digit | #xdigit,
+
+// 0x34  '4'
+#printable | #graph | #digit | #xdigit,
+
+// 0x35  '5'
+#printable | #graph | #digit | #xdigit,
+
+// 0x36  '6'
+#printable | #graph | #digit | #xdigit,
+
+// 0x37  '7'
+#printable | #graph | #digit | #xdigit,
+
+// 0x38  '8'
+#printable | #graph | #digit | #xdigit,
+
+// 0x39  '9'
+#printable | #graph | #digit | #xdigit,
+
+// 0x3a  ':'
+#printable | #graph | #punct,
+
+// 0x3b  ';'
+#printable | #graph | #punct,
+
+// 0x3c  '<'
+#printable | #graph | #punct,
+
+// 0x3d  '='
+#printable | #graph | #punct,
+
+// 0x3e  '>'
+#printable | #graph | #punct,
+
+// 0x3f  '?'
+#printable | #graph | #punct,
+
+// 0x40  '@'
+#printable | #graph | #punct,
+
+// 0x41  'A'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x42  'B'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x43  'C'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x44  'D'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x45  'E'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x46  'F'
+#printable | #graph | #alpha | #upper | #xdigit,
+
+// 0x47  'G'
+#printable | #graph | #alpha | #upper,
+
+// 0x48  'H'
+#printable | #graph | #alpha | #upper,
+
+// 0x49  'I'
+#printable | #graph | #alpha | #upper,
+
+// 0x4a  'J'
+#printable | #graph | #alpha | #upper,
+
+// 0x4b  'K'
+#printable | #graph | #alpha | #upper,
+
+// 0x4c  'L'
+#printable | #graph | #alpha | #upper,
+
+// 0x4d  'M'
+#printable | #graph | #alpha | #upper,
+
+// 0x4e  'N'
+#printable | #graph | #alpha | #upper,
+
+// 0x4f  'O'
+#printable | #graph | #alpha | #upper,
+
+// 0x50  'P'
+#printable | #graph | #alpha | #upper,
+
+// 0x51  'Q'
+#printable | #graph | #alpha | #upper,
+
+// 0x52  'R'
+#printable | #graph | #alpha | #upper,
+
+// 0x53  'S'
+#printable | #graph | #alpha | #upper,
+
+// 0x54  'T'
+#printable | #graph | #alpha | #upper,
+
+// 0x55  'U'
+#printable | #graph | #alpha | #upper,
+
+// 0x56  'V'
+#printable | #graph | #alpha | #upper,
+
+// 0x57  'W'
+#printable | #graph | #alpha | #upper,
+
+// 0x58  'X'
+#printable | #graph | #alpha | #upper,
+
+// 0x59  'Y'
+#printable | #graph | #alpha | #upper,
+
+// 0x5a  'Z'
+#printable | #graph | #alpha | #upper,
+
+// 0x5b  '['
+#printable | #graph | #punct,
+
+// 0x5c  '//'
+#printable | #graph | #punct,
+
+// 0x5d  ']'
+#printable | #graph | #punct,
+
+// 0x5e  '^'
+#printable | #graph | #punct,
+
+// 0x5f  '_'
+#printable | #graph | #punct,
+
+// 0x60  '`'
+#printable | #graph | #punct,
+
+// 0x61  'a'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x62  'b'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x63  'c'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x64  'd'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x65  'e'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x66  'f'
+#printable | #graph | #alpha | #lower | #xdigit,
+
+// 0x67  'g'
+#printable | #graph | #alpha | #lower,
+
+// 0x68  'h'
+#printable | #graph | #alpha | #lower,
+
+// 0x69  'i'
+#printable | #graph | #alpha | #lower,
+
+// 0x6a  'j'
+#printable | #graph | #alpha | #lower,
+
+// 0x6b  'k'
+#printable | #graph | #alpha | #lower,
+
+// 0x6c  'l'
+#printable | #graph | #alpha | #lower,
+
+// 0x6d  'm'
+#printable | #graph | #alpha | #lower,
+
+// 0x6e  'n'
+#printable | #graph | #alpha | #lower,
+
+// 0x6f  'o'
+#printable | #graph | #alpha | #lower,
+
+// 0x70  'p'
+#printable | #graph | #alpha | #lower,
+
+// 0x71  'q'
+#printable | #graph | #alpha | #lower,
+
+// 0x72  'r'
+#printable | #graph | #alpha | #lower,
+
+// 0x73  's'
+#printable | #graph | #alpha | #lower,
+
+// 0x74  't'
+#printable | #graph | #alpha | #lower,
+
+// 0x75  'u'
+#printable | #graph | #alpha | #lower,
+
+// 0x76  'v'
+#printable | #graph | #alpha | #lower,
+
+// 0x77  'w'
+#printable | #graph | #alpha | #lower,
+
+// 0x78  'x'
+#printable | #graph | #alpha | #lower,
+
+// 0x79  'y'
+#printable | #graph | #alpha | #lower,
+
+// 0x7a  'z'
+#printable | #graph | #alpha | #lower,
+
+// 0x7b  '{'
+#printable | #graph | #punct,
+
+// 0x7c  '|'
+#printable | #graph | #punct,
+
+// 0x7d  '}'
+#printable | #graph | #punct,
+
+// 0x7e  '~'
+#printable | #graph | #punct,
+
+// 0x7e  '~'
+#printable | #graph | #punct,
+
+// 0x7f  DEL
+#control
+];
+
+@class Ctype
+{
+	// Return the bitwise-and of character types (as above)
+	// for all characters in the given string
+
+	@classmethod ctype(cls, str)
+	{
+	    result = 0x7ff;
+	    b = #Bytearray.new(str);
+	    n = b.size();
+	    i = 0;
+	    while (i < n) {
+	        c = b[i];
+		if (c >= 0x80) {
+		    return (0);
+		}
+	        result &= #__map[c];
+		i += 1;
+	    }
+	    return (result);
+	}
+}

@@ -1,0 +1,18 @@
+
+#Module.new("regexp");
+Regexp = regexp.Regexp;
+
+@class Start
+{
+	@classmethod start(cl, args[])
+	{
+		"#REG_EXTENDED = [0]\n".format(Regexp.#REG_EXTENDED).print();
+		"#REG_ICASE = [0]\n".format(Regexp.#REG_ICASE).print();
+
+		re = Regexp.new(args[0], 0);
+		a = (args.size() < 3)
+		    ? re.match(args[1])
+		    : re.match(args[1], #Integer.new(args[2]));
+		"[0]\n".format(a).print();
+	}
+}

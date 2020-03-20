@@ -1,0 +1,23 @@
+
+#Module.new("process");
+
+@class Start
+{
+      @classmethod start(cl, args[])
+      {
+          p = process.Process.new(args);
+
+	  "[0]\n".format(p).print();
+
+	  out = p.stdout();
+	  loop {
+	       ln = out.readln();
+	       if (ln.size() == 0) {
+	           break;
+	       }
+
+	       ln.print();
+	  }
+	  p.wait().print();
+      }
+}

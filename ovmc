@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -e
+
+progname=$0
+
+extra_libs=''
+static=0
+verbose=0
+while [[ $# -gt 1 ]]
+do
+    case $1 in
+	-l)
+	    if [[ $# -lt 2 ]]
+	    then
+		echo "$progname: Missing library" >/dev/stderr
+		exit 1
+	    fi
+	    extra_libs="$extra_libs -l$2"
+	    shift
+	;;
+	-s)
+	    static=1
+	;;
+	-v)
+	    verbose=1
+	;;
+	*)
+	    break
+	;;
+    esac
+    shift
+done
+
+f=$(basename $1 .ovm)
+if [[ $f != $1 ]]
+then
+    suffix=ovm
+else
+    f=$(basename $1 .c)
+    if [[ $f != $1 ]]
+    then
+	suffix=c
+    else
+	echo "$progname: Invalid file type" >/dev/stderr
+	exit 1
+    fi
+fi
+
+if [[ $suffix == ovm ]]
+then
+    libexec_dir=/usr/local/libexec/x86_64-linux-gnu
+    $libexec_dir/ovmc1 $1 > ${f}.xml
+    $libexec_dir/ovmc2.py ${f}.xml > ${f}_2.xml
+    $libexec_dir/ovmc3.py ${f}_2.xml > ${f}_3.xml
+    $libexec_dir/ovmc4.py ${f}_3.xml > ${f}_4.xml
+    $libexec_dir/ovmc5.py ${f}_4.xml > ${f}.c
+fi
+gcc -E -I /usr/local/include/oovm ${f}.c >${f}_ovm1.c
+m4 -P /usr/local/share/oovm/oovmpp.m4 ${f}_ovm1.c >${f}_ovm2.c
+if [[ $static -eq 1 ]]
+then
+    gcc -Wall -g ${f}_ovm2.c -o ${f} -loovm $extra_libs
+else
+    libtool --tag=CC --mode=compile gcc -c -Wall -g ${f}_ovm2.c -o ${f}.o
+    libtool --tag=CC --mode=link gcc -rpath /usr/local/lib/ovm -rdynamic -o liboovm${f}.la ${f}.lo -loovm $extra_libs
+fi
+if [[ $verbose -eq 0 ]]
+then
+    rm -f ${f}.xml ${f}_[234].xml ${f}_ovm[12].c ${f}.o
+    if [[ $suffix == ovm ]]
+    then
+	rm -f ${f}.c
+    fi
+fi

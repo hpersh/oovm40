@@ -1,0 +1,67 @@
+///////////////////////////////////////////////////////////////////////////
+//
+// Module for HTTP connections
+//
+///////////////////////////////////////////////////////////////////////////
+
+#Module.new("socket");
+#Module.new("dns");
+
+@interface Connection
+{
+    // Get document (path) via given connection instance
+    @method get(recvr, doc);
+}
+
+@class Connection @implements Connection
+{
+    // Initialize connection instance
+    @method __init__(recvr, vers, host, port)
+    {
+        af = socket.Socket.#AF_INET;
+        recvr.host = host;
+        recvr.port = port;
+        recvr.vers = vers;
+        recvr.socket = socket.Socket.new(af, socket.Socket.#SOCK_STREAM, 0).connect(`<dns.Dns.getaddrinfo(host, `{"ai_family": af})[0].ai_addr, port>);
+    }
+
+    // Get document (path) via given connection instance
+     @method get(recvr, doc)
+     {
+	 recvr.socket.write("GET [2] HTTP/[1]\r\nHost: [0]\r\n\r\n".format(recvr.host, recvr.vers, doc));
+	 result = "";
+	 cnt = 0;
+	 loop {
+	     r = recvr.socket.readln();
+	     if (r.size() == 0) {
+		 break;
+	     }
+	     result += r;
+	     if (r == "\r\n") {
+		 cnt += 1;
+		 if (cnt > 1) {
+		     break;
+		 }
+	     } else {
+		 cnt = 0;
+	     }
+	 }
+
+	 return (result);
+     }
+}
+
+@class Start
+{
+    // Test connection get
+    @classmethod start(cl, vers, host, port, doc)
+    {
+	c = Connection.new(vers, host, port.Integer());
+	c.get(doc).print();		
+    }
+}
+
+// Local Variables:
+// mode: c++
+// c-basic-offset: 4
+// End:

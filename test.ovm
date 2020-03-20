@@ -1,0 +1,497 @@
+
+modulevar = 99;
+
+
+@class Base
+{
+	@method __init__(recvr, val)
+	{
+		recvr.base_val = val;
+	}
+
+	@method fooit(recvr)
+	{
+		return (recvr.base_val + 1);
+	}
+}
+
+
+@class Derived @parent Base
+{
+	@method __init__(recvr, val)
+	{
+		recvr.derived_val = val;
+		@super.__init__(recvr, -1);
+	}
+}
+
+
+@class Test
+{
+	classvar = 42;
+
+	@method __init__(recvr)
+	{
+		recvr.foo = "bar";
+	}
+
+
+	@classmethod _test_except(cls)
+	{
+		a = 13;
+	}
+
+
+	@classmethod test_except(cls)
+	{
+		a = 1;
+		b = 42;
+		c = `(a, b);
+
+		// Except-1: Test stack frame allocation for exceptions
+
+		try (e) {
+			d = "Some string";
+			Test._test_except();
+		} catch {
+//		  #System.abort("Except-1");
+		}
+
+		// Except-2: Test method call number of arguments
+
+		try (e) {
+			Test.test_except("foo");
+		} catch {
+		  #System.assert(e.type == "system.number-of-arguments"
+										&& e.got == 2
+						        && e.expected == 1,
+						        "Except-2.1\n" + e.write()
+										);
+		} none {
+		  #System.abort("Except 2.2\n");
+		}
+
+		// Except-3: Test unknown method
+
+		try (e) {
+			Test.foo();
+		} catch {
+		  #System.assert(e.type == "system.no-method" && e.selector == "foo", "Except-3.1\n" + e.write());
+		} none {
+		  #System.abort("Except-3.2\n");
+		}
+
+		// Except-4: Verify that exceptions did not muck up locals
+		#System.assert(a == 1, "Except-4.1\na = " + a.write());
+		#System.assert(b == 42, "Except-4.2\nb = " + b.write());
+		#System.assert(c == `(a, b), "Except-4.3\nc = " + c.write());
+	}
+
+
+	@classmethod test_env(cls)
+	{
+		#System.assert(#Environment.main == main, "Environment 1");
+	}
+
+
+	@classmethod test_vars(cls)
+	{
+		// Vars-1: Test undefined variable
+
+		try (e) {
+			foo = bar;
+		} catch {
+		  #System.assert(e.type == "system.no-variable" && e.name == "bar", "Vars-1.1");
+		} none {
+		  #System.abort("Vars-1.2");
+		}
+
+		try (e) {
+			a = b;
+			b = 13;
+		} catch {
+		  #System.assert(e.type == "system.no-variable" && e.name == "b", "Variable 1.3");
+		} none {
+		  #System.abort("Variable 1.4");
+		}
+
+		// Vars-2: Test local variable scope
+
+		{
+			bar = 13;
+		}
+		try (e) {
+			foo = bar;
+		} catch {
+		  #System.assert(e.type == "system.no-variable" && e.name == "bar", "Vars-2.1");
+		} none {
+		  #System.abort("Vars-2.2");
+		}
+
+		{
+			var y = 42, x;
+			#System.assert(y == 42, "Vars-2.3");
+			{
+				x = 13;
+			}
+			#System.assert(x == 13, "Vars-2.3");
+		}
+		try (e) {
+			foo = x;
+		} catch {
+		  #System.assert(e.type == "system.no-variable" && e.name == "x", "Vars-2.4");
+		} none {
+		  #System.abort("Vars-2.5");
+		}
+
+		// Vars-3: Test access to class variables
+		
+		#System.assert(Test.classvar == 42, "Vars-3.1");
+		Test.classvar = Test.classvar + 1;
+		#System.assert(Test.classvar == 43, "Vars-3.2");
+		#System.assert(#Metaclass.current().classvar == Test.classvar, "Vars-3.3");
+
+		// Vars-4: Test access to module variables
+		
+		#System.assert(modulevar == test.modulevar, "Vars-4.1");
+		test.modulevar = modulevar + 1;
+		#System.assert(modulevar == test.modulevar, "Vars-4.2");
+		#System.assert(#Namespace.current().modulevar == test.modulevar, "Vars-4.3");
+
+		// Vars-5: Test constants
+
+		Test.#const = "foo";
+		try (e) {
+		  Test.#const = 42;
+		} catch {
+		  #System.assert(e.type == "system.modify-constant" && e.key == "#const", "Vars-5.1");
+		} none {
+			#System.abort("Vars-5.2");
+		}
+	}
+
+	@classmethod test_consts(cls)
+	{
+  }
+
+	
+
+	@classmethod test_ns(cls)
+	{
+	}
+	
+
+	@classmethod test_class(cls)
+	{
+		#System.assert(Base.parent() == #Object, "Class-parent-1");
+		#System.assert(Derived.parent() == Base, "Class-parent-2");
+
+		#System.assert(#Metaclass.current() == Test, "Class 1");
+		#System.assert(#Metaclass.current().parent() == #Object, "Class 2");
+
+		b = Base.new(13);
+		d = Derived.new(42);
+
+		#System.assert(b.base_val == 13, "Base-derived-1.1");
+		#System.assert(d.base_val == -1, "Base-derived-1.2");
+		#System.assert(d.derived_val == 42, "Base-derived-1.3");
+
+		#System.assert(b.fooit() == 14, "Base-derived-2.1");
+		#System.assert(d.fooit() == 0, "Base-derived-2.2");
+	}
+
+
+	@classmethod test_obj(cls)
+	{
+		// Test instance member access
+		x = Test.new();
+		#System.assert(x.foo == "bar", "Object 1.1");
+
+		// Test instance member update
+		x.foo = 123;
+		#System.assert(x.foo == 123, "Object 1.2");
+
+		// Test instance member create
+		x.bar = 456;
+		#System.assert(x.bar == 456, "Object 1.3");
+
+		// Test instance non-existent member
+		try (e) {
+			y = x.sam;
+		} catch {
+		  #System.assert(e.type == "system.no-attribute" && e.attribute == "sam", "Object 1.4, got: [0]".format(e));
+		} none {
+		  #System.abort("Object 1.5");
+		}
+	}
+
+	
+	@classmethod test_bool(cls)
+	{
+		#System.assert(#true && #true,      "Boolean 1.1");
+		#System.assert(!(#true && #false),  "Boolean 1.1");
+		#System.assert(!(#false && #true),  "Boolean 1.1");
+		#System.assert(!(#false && #false), "Boolean 1.1");
+		
+		#System.assert(#true  || #true,     "Boolean 1.1");
+		#System.assert(#true  || #false,    "Boolean 1.1");
+		#System.assert(#false || #true,     "Boolean 1.1");
+		#System.assert(!(#false || #false), "Boolean 1.1");
+
+		#System.assert(!(#false && a), "Boolean 1.2");
+		#System.assert(#true || a, "Boolean 2.1");
+
+		#System.assert((#true ? 42 : "foo") == 42, "Boolean 3.1");
+		#System.assert((#false ? 42 : "foo") == "foo", "Boolean 3.2");
+	}
+
+
+	@classmethod test_int(cls)
+	{
+		a = 13;  b = 42;
+
+		#System.assert((a + b) == 55, "Integer add 1");
+		try (e) {
+			c = a + "a";
+		} catch {
+		  #System.assert(e.type == "system.invalid-value", "Integer add 2");
+		} none {
+		  #System.abort("Integer add 3");
+		}
+
+		#System.assert((a - b) == -29, "Integer subtract");
+
+		#System.assert(a < b, "Integer <");
+	}
+
+
+	@classmethod test_string(cls)
+	{
+		s = "The rain in Spain";
+
+		#System.assert(s.size() == 17, "String size 1");
+
+		#System.assert(s == s, "String equal 1");
+		#System.assert(s == "The rain in Spain", "String equal 2");
+
+		#System.assert(s.slice(0, 3) == "The", "String slice 1");
+		#System.assert(s.slice(17, -5) == "Spain", "String slice 2");
+
+		#System.assert(s[-5] == "S", "String slice 3");
+
+		#System.assert(s.index(" ") == 3, "String index 1");
+
+		#System.assert(s.split(" ") == `("The", "rain", "in", "Spain"), "String split 1");
+
+		#System.assert("[0] is [1]".format("x", 13) == "x is 13", "String format 1");
+	}
+
+
+	@classmethod test_list(cls)
+	{
+		li = `("a", 42, `<13, "foo">);
+
+		#System.assert(li.size() == 3, "List size");
+
+		_li = li;
+		#System.assert(_li.car() == "a", "List access 1");
+		_li = _li.cdr();
+		#System.assert(_li.car() == 42, "List access 2");
+		_li = _li.cdr();
+		#System.assert(_li.car() == `<13, "foo">, "List access 3");
+		_li = _li.cdr();
+		#System.assert(_li.isnil(), "List access 4");
+
+		li2 = `(1, "bar", `(13, 42), `[1, 2, 3], li);
+
+		#System.assert(li == li, "List equal 1");
+		#System.assert(li == `("a", 42, `<13, "foo">), "List equal 2");
+
+		#System.assert((li + `("bar", 99)) == `("a", 42, `<13, "foo">, "bar", 99), "List concat 1");
+		#System.assert(li == `("a", 42, `<13, "foo">), "List concat 2");
+
+		#System.assert(li.slice(1, 1) == `(42), "List slice 1");
+		#System.assert(li.slice(-2, -1) == `("a"), "List slice 2");
+
+		//		#System.assert(li.tostring() == "(\"a\", 42, <13, \"foo\">)", "List tostring 1");
+
+		#System.assert((@anon(a, b) { x = a + b;  return (x + 1); }).call(`[3, 4]) == 8, "Method 1");
+
+		ctxt = `{"count": 0};
+		`(10, 11, 23, 99).foreach(@anon(x, ctxt) { ctxt.count += 1; }, ctxt);
+		#System.assert(ctxt.count == 4, "List foreach 1");
+
+		m = @anon(x) { return (x < 10); };
+		#System.assert(`(1, 2, 21, 22).map(m) == `(#true, #true, #false, #false), "List map 1");
+
+		im = #Integer.instancemethods();
+		im.__map__ = m;
+
+		#System.assert(`(1, 2, 21, 22).map("__map__") == `(#true, #true, #false, #false), "List map 2");
+
+		im.delete("__map__");
+
+		#System.assert(`(1, 2, 3, 4).map("add", 3) == `(4, 5, 6, 7), "List map 3");
+
+		#System.assert(`(1, 2, 3, 4).reduce("add", 0) == 10, "List reduce 1");
+		#System.assert(`(1, 2, 3, 4).reduce(#Integer.instancemethods().add, 0) == 10, "List reduce 2");
+
+		ctxt = `{"count": 0};
+		#System.assert(`(1, 3, 4, 5).reduce(
+		  @anon(a, b, ctxt)
+			{
+			  ctxt.count += 1;
+				return (a + b);
+			},
+			0, ctxt) == 13, "List reduce 3");
+		#System.assert(ctxt.count == 4, "List reduce 4");
+  }
+
+
+	@classmethod test_dict(cls)
+	{
+		d = `{"a": 13, 42 : "bee", "c": `<3, 4>, `(4, 5, 6): "A list"};
+
+		// Dictionary-1: Test dictionary access
+
+		#System.assert(d.at("a") == `<"a", 13>, "Dictionary-1.1");
+		#System.assert(d.a == 13, "Dictionary-1.2");
+		#System.assert(d["a"] == 13, "Dictionary-1.3");
+		#System.assert(d[42] == "bee", "Dictionary-1.4");
+		#System.assert(d["c"] == `<3, 4>, "Dictionary-1.5");
+		#System.assert(d[`(4, 5, 6)] == "A list", "Dictionary-1.6");
+		#System.assert(d.at("foo") == #nil, "Dictionary-1.7");
+		try (e) {
+			val = d["foo"];
+		} catch {
+		  #System.assert(e.type == "system.no-member", "Dictionary-1.8");
+		} none {
+		  #System.abort("Dictionary-1.9");
+		}
+
+		dd = `{};
+		dd.foo = 42;
+		#System.assert(dd.at("foo") == `<"foo", 42>, "Dictionary-1.10");
+		#System.assert(dd["foo"] == 42, "Dictionary-1.11");
+		#System.assert(dd.foo == 42, "Dictionary-1.12");
+
+		#System.assert(d.size() == 4, "Dictionary size 1");
+
+		dd = #Dictionary.new();
+		li = d.tolist();
+		#System.assert(li.size() == 4, "Dictionary -> list 2");
+		until (li.isnil()) {
+			x = li.car();
+			k = x.car();
+			v = x.cdr();
+			#System.assert(dd.at(k).isnil(), "Dictionary -> list 3");
+		    #System.assert(d.at(k) == `<k, v>, "Dictionary -> list 4");
+			li = li.cdr();
+			dd[k] = v;
+		}
+		#System.assert(dd == d, "Dictionary -> list 5");
+
+		//		s = "{\"a\": 13, 42 : \"bee\", \"c\": <3, 4>, (4, 5, 6): \"A list\"}";
+		#System.assert(s.parse() == `<#true, d>, "Dictionary parse 1");
+		s = d.write();
+		#System.assert(s.parse() == `<#true, d>, "Dictionary parse 2");
+
+		#System.assert(d.map(@anon(x) { return (`<x.cdr(), x.car()>); }) == `{"A list": `(4, 5, 6), `<3, 4>: "c", "bee": 42, 13: "a"}, "Dictionary map 1");
+
+		dd = d.copy();
+		#System.assert(dd.a == 13 && d.a == 13, "Dictionary-copy-1");
+		dd.a = 99;
+		#System.assert(dd.a == 99 && d.a == 13, "Dictionary-copy-1");
+	}
+
+
+	@classmethod fac(cls, n)
+	{
+		if (n == 0) {
+			 return (1);
+		}
+		return (n * #Method.current().call(`[cl, n - 1]));
+	}
+
+
+	@classmethod test_method(cls)
+	{
+		#System.assert(#Method.current() == Test.classmethods().test_method, "Method-1");
+
+		#System.assert((1).method("add") == #Integer.instancemethods().add, "Method-lookup-1");
+
+		#System.assert(#Integer.instancemethods().add.call(`[1, 2]) == 3, "Method-call-1");
+		#System.assert(`[3, 4].apply(@anon(a, b) { return (a + b); }) == 7, "Method-call-2");
+		#System.assert(`[3, 4].apply("add") == 7, "Method-call-3");
+
+		#System.assert(`(`(1, 2, 3, 4), `(9, 10)).map(
+		    @anon(x) { return (x.reduce(
+				    @anon(u, v) { return (u + v); },
+						0
+						)); }
+				) == `(10, 19), "Method-call-4"
+				);
+
+		#System.assert(Test.fac(6) == 720, "Method-call-recurse-1");
+	}
+
+
+	@classmethod test_mem(cls)
+	{	
+		n = 1000000;
+		while (n > 0) {
+	    x = "foo";
+			x = #nil;
+			n -= 1;
+	  }
+
+		d1 = `{};
+		d2 = `{"d1": d1};
+		d1.d2 = d2;
+
+		d1 = #nil;
+		d2 = #nil;
+
+		n = 1000000;
+		while (n > 0) {
+	    x = "foo";
+			x = #nil;
+			n -= 1;
+	  }
+  }
+
+
+	@classmethod test_opt(cls)
+	{
+		x = #false;
+		y = x.not().not();
+		#System.assert(y == x, "Optimizer-1");
+		#System.assert(y.not() == x.not(), "Optimizer-2");
+	}
+}
+
+
+@class Start
+{
+	@classmethod start(cls)
+	{
+		Test.test_except();
+		Test.test_env();
+		Test.test_vars();
+		Test.test_consts();
+		Test.test_class();
+		Test.test_obj();
+		Test.test_bool();
+		Test.test_int();
+		Test.test_string();
+		Test.test_list();
+		Test.test_dict();
+		Test.test_method();
+		Test.test_mem();
+		Test.test_opt();
+	}
+}
+
+// Local variables:
+// tab-width: 2
+// End:

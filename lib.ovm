@@ -1,0 +1,48 @@
+@class String
+{
+    @method format(recvr, args[])
+    {
+	result = #nil;
+	ofs = 0;
+	n = recvr.size();
+	while (ofs < n) {
+	    x = recvr.index("[", ofs);
+	    if (x.isnil()) {
+		ifnot (recvr.index("]", ofs).isnil()) {
+                    #Exception.new(`{"type": "system.invalid-value", "value": recvr}).raise();
+		}
+		result = result.cons(recvr.slice(ofs, n - ofs));
+		break;
+	    }
+	    y = recvr.index("]", x);
+	    if (y.isnil() || y <= (x + 1)) {
+                #Exception.new(`{"type": "system.invalid-value", "value": recvr}).raise();
+	    }
+	    if (x > ofs) {
+		result = result.cons(recvr.slice(ofs, x - ofs));
+	    }
+	    x += 1;
+	    var idx;
+	    try (e) {
+	        idx = #Integer.new(recvr.slice(x, y - x));
+	    }
+	    catch (e.type == "system.invalid-value") {
+		e.value = recvr;
+                #Exception.reraise();
+	    }
+	    result = #String.new(args[idx]).cons(result);
+	    ofs = y + 1;
+	}
+
+	return ("".rjoin(result));
+    }
+}     
+
+
+#String.instancemethods().format = String.instancemethods().format;
+
+    
+// Local Variables:
+// mode: c++
+// c-basic-offset: 4
+// End:

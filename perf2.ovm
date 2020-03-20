@@ -1,0 +1,12 @@
+
+@class Start
+{
+	@classmethod start(cl, limit)
+	{
+		lim = #Integer.new(limit);
+		cnt = 0;
+		while (cnt < lim) {
+		      cnt += 1;
+		}
+	}
+}

@@ -1,0 +1,24 @@
+#Module.new("socket");
+
+
+@class Start
+{
+    @classmethod start(cl)
+    {
+	s = socket.Socket.new(socket.Socket.#AF_INET, socket.Socket.#SOCK_STREAM, 0);
+	s.print();
+	"\n".print();
+	s.connect(`<"72.30.35.9", 80>);
+	s.print();
+	"\n".print();
+
+	s = socket.Socket.new(`{"domain": socket.Socket.#AF_INET, "type": socket.Socket.#SOCK_STREAM, "proto": 0, "remote": `<"72.30.35.9", 80>});
+	s.print();
+	"\n".print();
+    }
+}
+
+// Local Variables:
+// mode: c
+// c-basic-offset: 4
+// End:

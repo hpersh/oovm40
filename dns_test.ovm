@@ -1,0 +1,27 @@
+///////////////////////////////////////////////////////////////////////////
+//
+// Test the dns module
+//
+///////////////////////////////////////////////////////////////////////////
+
+#Module.new("dns");
+
+@class Start
+{
+    @classmethod start(cls, hostname, args[])
+    {
+        var info;
+        cond {
+	    n = args.size();
+            if (n == 0) {
+                info = dns.Dns.getaddrinfo(hostname);
+                break;
+            }
+	    if (n == 1) {	
+                info = dns.Dns.getaddrinfo(hostname, args[0].parse());
+		break;
+	    }
+	}
+	info.println();
+    }
+}

@@ -1,0 +1,106 @@
+
+
+@func bubble_sort(x) {
+    a = x.Array();
+    n = a.size();
+    if (n < 2) {
+        return (x);
+    }
+    n -= 1;
+    loop {
+        f = #false;
+        i = 0;
+	while (i < n) {
+	    j = i + 1;
+	    if (a[i] > a[j]) {
+	        temp = a[i];
+		a[i] = a[j];
+		a[j] = temp;
+		f = #true;
+	    }
+	    i = j;
+	}
+	ifnot (f) {
+	    break;
+	}
+    }
+    return (x.instanceof().new(a));
+}
+
+@func selection_sort(x) {
+     a = x.Array();
+     n = a.size();
+     v = x.map1(@anon (dummy) { return (#true); }).Array();
+     b = #Array.new(n);
+     j = 0;
+     while (j < n) {
+         var min, i_min;
+	 min_valid = #false;
+         i = 0;
+	 while (i < n) {
+	     if (v[i]) {
+	         u = a[i];
+	         if (min_valid.not() || u < min) {
+		     min = u;
+		     i_min = i;
+		     min_valid = #true;
+		 }
+	     }
+	     i += 1;
+	 }
+	 b[j] = min;
+	 j += 1;
+	 v[i_min] = #false;
+     }
+
+     return (x.instanceof().new(b));
+}
+
+@func merge_sort(x)
+{
+    a = x.Array();
+    n = a.size();
+    if (n <= 5) {
+        return (bubble_sort.call(x));
+    }
+    k = n / 2;
+    m = n - k;
+    s1 = merge_sort.call(a.slice(0, k));
+    s2 = merge_sort.call(a.slice(k, m));
+    a = #Array.new(n);
+    i = 0;
+    j1 = 0;
+    j2 = 0;
+    var u;
+    while (i < n) {
+        cond {
+	    if (j1 >= k) {
+		u = s2[j2];
+		j2 += 1;
+		break;
+	    }
+	    if (j2 >= m || s1[j1] < s2[j2]) {
+	       u = s1[j1];
+	       j1 += 1;
+	       break;
+	    }
+	    u = s2[j2];
+	    j2 += 1;
+	}
+	a[i] = u;
+	i += 1;
+    }
+    
+    return (x.instanceof().new(a));
+}
+
+@class Start
+{
+    @classmethod start(cls, args[])
+    {
+	li = `(12, 9, 42, 99, -10, 22, 101, -42, 5, 1234);
+	"Bubble sort:    [0]\n".format(bubble_sort.call(li)).print();
+	"Selection sort: [0]\n".format(selection_sort.call(li)).print();
+	"Merge sort:     [0]\n".format(merge_sort.call(li)).print();
+    }
+}

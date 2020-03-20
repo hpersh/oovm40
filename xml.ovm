@@ -1,0 +1,449 @@
+// Module to:
+// 1. Serialize and unserialize native OVM objects, i.e. convert between an OVM object and XML
+// 2. Represent general XML documents as a hierarchy of instances of Xml objects, i.e. elements, attributes, children, etc.
+
+#Module.new("ctype");
+Ctype = ctype.Ctype;
+
+@class Xmlnode
+{
+}
+
+#entity_map = `{"lt": "<", "amp": "&", "gt": ">", "quot": "\"", "apos": "'"};
+
+@class Xml
+{
+    @classmethod dump_native(cls, out, inst)
+    {
+        cond {
+	    if (inst.isnil()) {
+	        outf.write("<nil/>");
+	        break;
+	    }
+	    cls = inst.instanceof();
+	    if (cls == #Boolean) {
+	        out.write("<bool val=\"[0]\"/>".format(inst ? 1 : 0));
+		break;
+	    }
+	    if (cls == #Integer) {
+	        out.write("<int val=\"[0]\"/>".format(inst));
+		break;
+	    }
+	    if (cls == #Float) {
+	        out.write("<float val=\"[0]\"/>".format(inst));
+		break;
+	    }
+	    if (cls == #String) {
+	        out.write("<str val=\"[0]\"/>".format(inst));
+		break;
+	    }
+	    if (cls == #Pair) {
+	        out.write("<pair>");
+		Xml.dump_native(out, inst.first());
+		Xml.dump_native(out, inst.second());
+	        out.write("</pair>");
+	    	break;
+	    }
+	    if (cls == #List) {
+	        out.write("<list>");
+		for x (inst) {
+		    Xml.dump_native(out, x);
+		}
+	        out.write("</list>");
+	    	break;
+	    }
+	    if (cls == #Array) {
+	        out.write("<array size=\"[0]\">".format(inst.size()));
+		n = inst.size();
+		i = 0;
+		while (i < n) {
+		    Xml.dump_native(out, inst[i]);
+		    i += 1;
+		}
+	        out.write("</array>");
+		break;
+	    }
+	    if (cls == #Dictionary) {
+	        out.write("<dict>");
+	        for x (inst) {
+		    Xml.dump_native(out, x);
+		}
+	        out.write("</dict>");
+		break;
+	    }
+
+	    out.write("<user instanceof=\"[0]\">".format(inst.instanceof().name()));
+	    for x (inst) {
+	        Xml.dump_native(out, x);	        
+	    }
+	    out.write("</user>");
+	}
+    }
+
+    // General input return values:
+    // #Integer    => input read error
+    // #false      => input syntax error
+    // #true       => success, no data returned
+    // #String     => character input, zero-length for EOF
+    // #nil, other => data structure parsed
+
+    @classmethod getchar(cls, inp)
+    {
+	c = inp.read(1);
+	if (c == "&") {
+	    entity = #nil;
+	    loop {
+	        c = inp.read(1);
+		ifnot (c.instanceof() == #String) {
+		    // Read error
+		    return (c);
+		}
+		if (c.size() == 0) {
+		    // EOF during entity
+		    return (#false);
+		}
+		if (c == ";") {
+		    break;
+		}
+		entity = entity.cons(c);
+	    }
+	    return (#entity_map.atdefault("".rjoin(entity), #false));
+	}
+	return (c);
+    }
+
+    @classmethod getchar_noeof(cls, inp)
+    {
+        c = Xml.getchar(inp);
+	ifnot (c.instanceof() == #String) {
+	    return (c);
+	}
+	return (c.size() == 0 ? #false : c);
+    }
+
+    @classmethod spaces(cls, inp)
+    {
+        loop {
+	    c = inp.read(1);
+	    ifnot (c.instanceof() == #String) {
+	        return (c);
+	    }
+	    if (c.size() == 0) {
+	        return (#true);
+	    }
+	    if ((Ctype.ctype(c) & ctype.#space) == 0) {
+	        inp.unread(c);
+	        return (#true);
+	    }
+	}
+    }
+
+    @classmethod expect(cls, inp, c)
+    {
+	r = Xml.getchar_noeof(inp);
+	return (r.instanceof() == #String ? (r == c) : r);
+    }
+
+    @classmethod attr_read(cls, inp)
+    {
+	c = Xml.spaces(inp);
+        ifnot (c == #true) {
+	    return (c);
+	}
+	c = Xml.getchar_noeof(inp);
+	ifnot (c.instanceof() == #String) {
+	    return (c);
+	}
+	if (c == "/" || c == ">") {
+	    inp.unread(c);
+	    return (#nil);  // No attribute found
+	}
+	if ((Ctype.ctype(c) & ctype.#alpha) == 0) {
+	    return (#false);  // Invalid character => syntax error
+	}
+	attr_name_list = `(c);
+	loop {
+	    c = Xml.getchar_noeof(inp);
+	    ifnot (c.instanceof() == #String) {
+	    	// Read error or syntax error
+	    	return (c);
+            }
+	    if ((Ctype.ctype(c) & (ctype.#alpha | ctype.#digit)) == 0) {
+	        break;
+	    }
+	    attr_name_list = attr_name_list.cons(c);
+	}
+	ifnot (c == "=") {
+	    return (#false);  // Invalid character => syntax error
+	}
+	r = Xml.expect(inp, "\"");
+	ifnot (r == #true) {
+	    return (r);
+	}
+	attr_value_list = #nil;
+	loop {
+	    c = Xml.getchar_noeof(inp);
+	    ifnot (c.instanceof() == #String) {
+	        return (c);
+	    }
+	    if (c == "\"") {
+	        break;
+	    }
+	    attr_value_list = attr_value_list.cons(c);
+	}
+	return (`<"".rjoin(attr_name_list), "".rjoin(attr_value_list)>);  // Attribute found
+    }
+
+    @classmethod text_read(cls, inp)
+    {
+        li = `();
+	loop {
+	    c = Xml.getchar(inp);
+	    ifnot (c.instanceof() == #String) {
+	        return (c);
+	    }
+	    if (c.size() == 0) {
+	        break;
+	    }
+	    if (c == "<") {
+	        inp.unread(c);
+		break;
+	    }
+	}
+
+	return (`{"type": "text", "text": "".rjoin(li)});
+    }
+
+    @classmethod tag_read2(cls, inp)
+    {
+	type = "open";
+	c = Xml.getchar_noeof(inp);
+	ifnot (c.instanceof() == #String) {
+	    return (c);
+	}
+	li = #nil;
+	if (c == "/") {
+	    type = "close";
+	} else {
+	    if ((Ctype.ctype(c) & ctype.#alpha) == 0) {
+	        return (#false);  // Invalid character, syntax error
+	    }
+	    li = `(c);
+	}
+	loop {
+	    c = Xml.getchar_noeof(inp);
+	    ifnot (c.instanceof() == #String) {
+	        return (c);
+	    }
+	    ifnot ((Ctype.ctype(c) & ctype.#space) == 0) {
+	        break;
+	    }
+	    if (c == "/" || c == ">") {
+	        inp.unread(c);
+		break;
+	    }
+	    if ((Ctype.ctype(c) & ctype.#alpha) == 0) {
+	        return (#false);
+	    }
+	    li = li.cons(c);
+	}
+	if (li.isnil()) {
+	    return (#false);
+	}
+
+	attrs = `{};
+	if (type == "open") {
+	    loop {
+		a = Xml.attr_read(inp);
+		if (a.isnil()) {
+		    break;
+		}
+		ifnot (a.instanceof() == #Pair) {
+		    return (a);
+		}
+		attrs.put(a);
+	    }
+	}
+
+	c = Xml.getchar_noeof(inp);
+	ifnot (c.instanceof() == #String) {
+	    return (c);
+	}
+	cond {
+	    if (c == "/") {
+	        if (type == "close") {
+		    return (#false);
+		}
+	        c = Xml.getchar_noeof(inp);
+		type = "leaf";
+	    }
+	    if (c == ">") {
+	        break;
+	    }
+	    return (#false);
+	}
+
+	return (`{"tag": "".rjoin(li), "type": type, "attrs": attrs});
+    }
+
+    @classmethod tag_read(cls, inp)
+    {
+	ifnot (Xml.spaces(inp) == #true) {
+	    return (#false);
+	}
+	r = Xml.expect(inp, "<");
+	ifnot (r == #true) {
+	    return (r);
+	}
+	return (Xml.tag_read2(inp));
+    }
+
+    @classmethod tag_parse_native(cls, inp, x)
+    {
+	cond {
+	    if (x.tag == "int") {
+	        return (x.type == "leaf" ? `<#true, x.attrs.val.Integer()> : #nil);
+	    }
+	    if (x.tag == "str") {
+	        return (x.type == "leaf" ? `<#true, x.attrs.val> : #nil);
+	    }
+	    if (x.tag == "list") {
+	        if (x.type == "close") {
+		    return (#nil);
+		}
+		if (x.type == "leaf") {
+		    return (`<#true, #nil>);
+		}
+	        li = #nil;
+		if (x.type == "open") {
+		    loop {
+		        t = Xml.tag_read(inp);
+			if (t.tag == "list" && t.type == "close") {
+			    break;
+			}
+			n = Xml.tag_parse_native(inp, t);
+			if (n.isnil()) {
+			    return (#nil);
+			}
+			li = li.cons(n);
+		    }		    
+		}
+		return (`<#true, li.reverse()>);
+	    }
+	    if (x.tag == "array") {
+	        if (x.type == "close") {
+		    return (#nil);
+		}
+	        n = x.attrs.size.Integer();
+		if (x.type == "leaf" && n > 0) {
+		    return (#nil);
+		}
+	        a = #Array.new(n);
+		if (x.type == "open") {
+ 		    i = 0;
+		    while (i < n) {
+			val = Xml.read_native(inp);
+			if (val.isnil()) {
+			    return (#nil);
+			}
+			a[i] = val.second();
+			i += 1;
+		    }
+		    t = Xml.tag_read(inp);
+		    ifnot (t.tag == "array" && t.type == "close") {
+			return (#nil);
+		    }
+		}
+		return (`<#true, a>);
+	    }
+	}
+    }
+
+    @classmethod read_native(cls, inp)
+    {
+    	t = Xml.tag_read(inp);
+	return (t.isnil() ? #nil : Xml.tag_parse_native(inp, t));
+    }
+
+    @classmethod read_children(cls, inp, parent)
+    {
+	li = `();
+	loop {
+	    ch = Xml.tag_read(inp);
+	    if (ch.type == "close") {
+		ifnot (ch.tag == parent.tag) {
+		    return (#nil);
+		}
+		break;
+	    }
+	    if (ch.type == "leaf") {
+		li = li.cons(ch);
+		continue;
+	    }
+	    if (ch.type == "open") {
+	        Xml.read_children(inp, ch);
+		li = li.cons(ch);
+	    }
+	}
+	parent.children = li.reverse();
+    }
+    
+    @classmethod read_parent(cls, inp, parent)
+    {
+        li = `();
+	loop {
+	    c = Xml.getchar(inp);
+	    ifnot (c.instanceof() == #String) {
+	        return (c);
+	    }
+	    if (c.size() == 0) {
+	        ifnot (parent.type == "document") {
+		    return (#false);
+		}
+		break;
+	    }
+	    var nd;
+	    if (c == "<") {
+	        nd = Xml.tag_read2(inp);
+		ifnot (nd.instanceof() == #Dictionary) {
+	    	    return (#false);
+		}
+		cond {
+		    if (nd.type == "open") {
+		        Xml.read_parent(inp, nd);
+			break;
+		    }
+		    if (nd.type == "close") {
+		        ifnot (nd.tag == parent.atdefault("tag", "")) {
+		            return (#false);
+		        }
+		        break 2;
+		    }
+		}
+	    } else {
+	        nd = Xml.text_read(inp);
+		ifnot (nd.instanceof() == #Dictionary) {
+	    	    return (#false);
+		}
+	    }
+	    li = li.cons(nd);
+	}
+
+	parent.children = li.reverse();
+
+	return (parent);
+    }
+
+    @classmethod read(cls, inp)
+    {
+        return (Xml.read_parent(inp, `{"type": "document", "children": `()}));
+    }
+}
+
+@class Start
+{
+    @classmethod start(cls, args[])
+    {
+	Xml.read(#File.new(args[0], "r")).println();
+    }
+}

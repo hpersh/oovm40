@@ -1,0 +1,59 @@
+
+#Module.new("thread");
+Thread = thread.Thread;
+
+#Module.new("datetime");
+Datetime = datetime.Datetime;
+
+@class Start
+ {
+     @classmethod thread1(cl, s)
+     {
+	 i = 0;
+	 while (i < 10) {
+	     test_dict.Thread1 = `<i, Datetime.ctime(Datetime.time())>;
+	     "[0]\n".format(test_dict).print();
+		      
+	     datetime.Delay.sleep(3);
+		      
+	     test_dict.del("Thread1");
+	     "[0]\n".format(test_dict).print();
+		      
+	     datetime.Delay.sleep(3);
+		      
+	     i += 1;
+	 }
+
+	 return (42);
+     }
+	
+     @classmethod start(cl)
+     {
+	 main.test_dict = `{"a": 123, "b": "foo"};
+
+	 th = Thread.new(Start.classmethods().thread1, cl, "A test arg");
+
+	 i = 0;
+	 while (i < 5) {
+	     test_dict.main = `<i, Datetime.ctime(Datetime.time())>;
+	     "[0]\n".format(test_dict).print();
+		      
+	     datetime.Delay.sleep(5);
+		      
+	     test_dict.del("main");
+	     "[0]\n".format(test_dict).print();
+		      
+	     datetime.Delay.sleep(5);
+		      
+	     i += 1;
+	 }
+
+	 "Waiting for thread1...\n".print();
+	 "Thread status = [0]\n".format(th.join()).print();
+     }
+}
+
+// Local Variables:
+// mode: c++
+// c-basic-offset: 4
+// End:

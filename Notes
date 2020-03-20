@@ -1,0 +1,118 @@
+
+
+* len (unsigned), ofs (signed), uofs (unsigned), val (signed)
+
+ 5 (1)  : 0 0 0 n n n n n
+13 (2)  : 0 0 1 n n n n n . n n n n n n n n
+21 (3)  : 0 1 0 n n n n n . n n n n n n n n . n n n n n n n n
+29 (4)  : 0 1 1 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+32 (5)  : 1 0 0 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+64 (9)  : 1 0 1 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+80 (11) : 1 1 0 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+
+nnn..n is big-endian
+
+* str
+
+len+data (data is null-terminated)
+
+* base+ofs (signed)
+
+ 3 (1) : 0 0 0 b b n n n
+11 (2) : 0 0 1 b b n n n . n n n n n n n n
+19 (3) : 0 1 0 b b n n n . n n n n n n n n . n n n n n n n n
+27 (4) : 0 1 1 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+32 (5) : 1 0 0 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+64 (9) : 1 0 1 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+
+bb
+00 sp
+01 bp
+10 ap
+11 dst (implies ofs = 0)
+
+nnn..n is big-endian
+
+
+noop
+00
+
+inst_assign
+01 dst:base+ofs src:base+ofs
+
+stack_free
+02 len
+
+stack_alloc
+03 len
+
+stack_free_alloc
+04 free:len alloc:len
+
+stack_push
+05 src:base+ofs
+
+method_call
+06 dst:base+ofs sel:str argc:len
+
+nil_push
+07
+
+nil_assign
+08 dst:base+ofs
+
+bool_pushc
+0a (false)
+0b (true)
+
+bool_newc
+0c dst:base+ofs (false)
+0d dst:base+ofs (true)
+
+int_pushc
+0e val:val
+
+int_newc
+0f dst:base+ofs val:val
+
+float_pushc
+10 val:val
+
+float_newc
+11 dst:base+ofs val:val
+
+str_pushc
+12 str:str
+
+str_newc
+13 dst:base+ofs str:str
+
+method_pushc
+14 method:ofs
+
+method_newc
+15 dst:base+ofs method:ofs
+
+enivron_at_pushc
+16 str:str
+
+environ_atc
+17 dst:base+ofs str:str
+
+return
+18
+
+jmp
+20 ofs
+
+jf
+21 ofs
+
+jt
+22 ofs
+
+iff
+23 ofs
+
+ift
+24 ofs

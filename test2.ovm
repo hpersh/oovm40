@@ -1,0 +1,769 @@
+#Module.new("regexp");
+
+@interface Iface1
+{
+    @method func1(a, b[]);
+}
+
+
+@class Iface1_test @implements Iface1
+{
+    @method func1(u, v[])
+    {
+	return ("yes");
+    }
+}
+
+
+@class Base_Default_Init {
+}
+
+@class Base {
+    @method __init__(recvr, x)
+    {
+	recvr.x = x;
+    }
+}
+
+    
+@class Derived @parent Base {
+    @method __init__(recvr, x, y)
+    {
+	@super.__init__(recvr, x);
+	recvr.y = y;
+    }
+}
+
+    
+@class Derived2 @parent Derived {
+    @method __init__(recvr, x, y, z)
+    {
+	@super.__init__(recvr, x, y);
+	recvr.z = z;
+    }
+}
+
+    
+@class Start {
+    classvar = 123;
+
+    @classmethod dummy(cl)
+    {
+    }
+
+    @classmethod raiser(cl, lvl, type)
+    {
+	if (lvl == 0) {
+            #Exception.new(type).raise();
+	}
+	Start.raiser(lvl - 1, type);
+    }
+
+    @classmethod reraiser(cl, lvl, type)
+    {
+	try (e) {
+	    if (lvl == 0) {
+		Start.raiser(0, type);
+	    }
+	    Start.reraiser(lvl - 1, type);
+	}
+	catch {
+            #System.assert(e.type == type && e.method.write() == "&Codemethod(test2.Start.raiser)", "Except-2.1, got: [0]".format(e));
+            #Exception.reraise();
+	}
+	none {
+            #System.abort("Except-2.2");
+	}
+    }
+
+    @classmethod test_except(cl)
+    {
+	// Basic exception test
+
+	f = #false;
+	try (e) {
+	} catch {
+	} any {
+            #System.abort("Except-basic-1");
+	} none {
+	    f = #true;
+	}
+        #System.assert(f, "Except-basic-2");
+	
+	// Test system exceptions
+
+	f = #false;
+	try (e) {
+	    x = #Integer.new("xyz");
+	} catch {
+            #System.assert(e.type == "system.invalid-value"
+	                   && e.value == "xyz"
+			   && e.method.write() == "&Codemethod(main.String.Integer)",
+			   "Except-system-1, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+	} none {
+            #System.abort("Except-system-2");
+	}
+        #System.assert(f, "Except-system-3");
+
+	f = #false;
+	try (e) {
+	    x = (13).foo();
+	} catch {
+            #System.assert(e.type == "system.no-method"
+	                   && e.receiver == 13
+			   && e.selector == "foo"
+			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+			   "Except-system-4, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+	} none {
+            #System.abort("Except-system-5");
+	}
+        #System.assert(f, "Except-system-6");
+
+	f = #false;
+	try (e) {
+	    x = y;
+	} catch {
+            #System.assert(e.type == "system.no-variable"
+			   && e.name == "y"
+			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+			   "Except-system-7, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+	} none {
+            #System.abort("Except-system-8");
+	}
+        #System.assert(f, "Except-system-9");
+
+        f = #false;
+        try (e) {
+	    Start.test_except("foo");
+	} catch {
+            #System.assert(e.type == "system.number-of-arguments"
+	                   && !regexp.Regexp.match(".*[0]\\.[1]\\.[2]".format(@module, @class, "test_except"), e.method.write()).isnil()
+			   && e.expected == 1
+			   && e.got == 2
+			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+			   "Except-system-10, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-11");
+	}
+        #System.assert(f, "Except-system-12");
+
+        f = #false;
+        try (e) {
+	    Start.test_array_args();
+	} catch {
+            #System.assert(e.type == "system.number-of-arguments"
+	                   && !regexp.Regexp.match(".*[0]\\.[1]\\.[2]".format(@module, @class, "test_array_args"), e.method.write()).isnil()
+			   && e.minimum == 2
+			   && e.got == 1
+			   && e.method.write() == "&Codemethod(test2.Start.test_array_args)",
+			   "Except-system-13, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-14");
+	}
+        #System.assert(f, "Except-system-15");
+
+        f = #false;
+        i = Base.new(42);
+        try (e) {
+	    j = i.foo;
+	} catch {
+            #System.assert(e.type == "system.no-attribute"
+	                   && e.instance == i
+			   && e.attribute == "foo"
+			   && e.method.write() == "&Codemethod(main.Object.ate)",
+			   "Except-system-16, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-17");
+	}
+        #System.assert(f, "Except-system-18");
+
+        f = #false;
+        a = `[1, "foo", 42];
+        try (e) {
+	    x = a[5];
+	} catch {
+            #System.assert(e.type == "system.index-range"
+	                   && e.instance == a
+			   && e.index == 5
+			   && e.method.write() == "&Codemethod(main.Array.at)",
+			   "Except-system-19, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-20");
+	}
+        #System.assert(f, "Except-system-21");
+
+        f = #false;
+        a = `[1, "foo", 42];
+        try (e) {
+	    x = a.slice(5, 3);
+	} catch {
+            #System.assert(e.type == "system.index-range"
+	                   && e.instance == a
+			   && e.index == 5
+			   && e.length == 3
+			   && e.method.write() == "&Codemethod(main.Array.slice)",
+			   "Except-system-22, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-23");
+	}
+        #System.assert(f, "Except-system-24");
+
+        f = #false;
+        d = `{1: "sam", "#foo": 42};
+        try (e) {
+	    x = d.xyz;
+	} catch {
+            #System.assert(e.type == "system.key-not-found"
+	                   && e.instance == d
+			   && e.key == "xyz"
+			   && e.method.write() == "&Codemethod(main.Dictionary.ate)",
+			   "Except-system-25, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-26");
+	}
+        #System.assert(f, "Except-system-27");
+
+        f = #false;
+        try (e) {
+	    d["#foo"] = 99;
+	} catch {
+            #System.assert(e.type == "system.modify-constant"
+	                   && e.instance == d
+			   && e.key == "#foo"
+			   && e.method.write() == "&Codemethod(main.Dictionary.atput)",
+			   "Except-system-28, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-29");
+	}
+        #System.assert(f, "Except-system-30");
+
+        filename = "__test_file__";
+        mode = "r";
+        f = #false;
+        try (e) {
+	    f = #File.new(filename, mode);
+	} catch {
+            #System.assert(e.type == "system.file-open"
+	                   && e.filename == filename
+			   && e.mode == mode
+			   && e.message == "No such file or directory"
+			   && e.method.write() == "&Codemethod(main.File.new)",
+			   "Except-system-31, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-32");
+	}
+        #System.assert(f, "Except-system-33");
+
+        modulename = "__test_module__";
+        f = #false;
+        try (e) {
+            #Module.new(modulename);
+	} catch {
+            #System.assert(e.type == "system.module-load"
+	                   && e.name == modulename
+	                   && e.message == "module not found"
+			   && e.method.write() == "&Codemethod(main.Module.new)",
+			   "Except-system-34, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-35");
+	}
+        #System.assert(f, "Except-system-36");
+
+        a = `{};
+        b = `{"a": a};
+        a["b"] = b;
+        f = #false;
+        try (e) {
+	    s = a.write();
+	} catch {
+            #System.assert(e.type == "system.descent-loop"
+			   && e.method.write() == "&Codemethod(main.Dictionary.write)",
+	                   "Except-system-37, got: [0]".format(e)
+			   );
+        } any {
+	    f = #true;
+        } none {
+            #System.abort("Except-system-38");
+	}
+        #System.assert(f, "Except-system-39");
+
+        // Test raise
+
+        f = #false;
+	try (e) {
+		Start.raiser(0, "foo");
+	}
+	catch {
+            #System.assert(e.type == "foo"
+			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+	                   "Except-raise-1, got: [0]".format(e)
+			   );
+	}
+        any {
+	    f = #true;
+	}
+        none {
+            #System.abort("Except-raise-2");
+	}
+        #System.assert(f, "Except-raise-3");
+
+	try (e) {
+	    Start.raiser(3, "foo");
+	}
+	catch {
+            #System.assert(e.type == "foo"
+			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+	                   "Except-raise-3, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Except-raise-4");
+	}
+
+	// Test reraise
+
+	try (e) {
+	    Start.reraiser(0, "bar");
+	}
+	catch {
+            #System.assert(e.type == "bar"
+			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+	                   "Except-reraise-3, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Except-reraise-4");
+	}
+
+	try (e) {
+	    Start.reraiser(3, "bar");
+	}
+	catch {
+            #System.assert(e.type == "bar"
+			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+	                   "Except-reraise-5, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Except-reraise-6");
+	}
+
+	// Test exception stack allocation
+
+	x = 42;
+	try (e) {
+	    y = x + 1;
+	    x = y + 1;
+	}
+	catch {
+            #System.abort("Except-stack-alloc-1");
+	}
+        #System.assert(x == 44, "Except-stack-alloc-2");
+
+	try (e) {
+	    z = y;
+	}
+	catch {
+            #System.assert(e.type == "system.no-variable"
+	                   && e.name == "y"
+			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+			   "Except-stack-alloc-3, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Except-stack-alloc-4");
+	}
+
+	try (ee) {
+	    eee = e;
+	}
+	catch {
+            #System.assert(ee.type == "system.no-variable"
+	                   && ee.name == "e"
+			   && ee.method.write() == "&Codemethod(main.Environment.ate)",
+			   "Except-stack-alloc-5, got: [0]".format(ee)
+			   );
+	}
+	none {
+            #System.abort("Except-stack-alloc-6");
+	}
+
+        // Test
+
+        try (e) {
+            #Exception.new("user1").raise();
+	}
+	catch {
+            #System.assert(e.type == "user1"
+			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+			   "Except-user-1, got: [0]".format(e)
+			   );
+	}
+    }
+
+    @classmethod test_array_args(cl, fixed_arg, args[])
+    {
+        #System.assert(args == fixed, "Array-args-1");
+    }
+
+    @classmethod test_vars(cl)
+    {
+	// Vars-1 Test globals
+
+        #System.assert(#Integer.instanceof() == #Metaclass && #Integer.name() == "#Integer", "Vars-1.1");
+
+	main.foo = 1313;
+        #System.assert(main.foo == 1313, "Vars-1.2");
+        #System.assert(foo == 1313, "Vars-1.3");
+
+	// Vars-2 Test class vars
+
+        #System.assert(Start.classvar == 123, "Vars-2.1");
+	Start.classvar = 321;
+        #System.assert(Start.classvar == 321, "Vars-2.2");
+	Start.classvar2 = 456;
+        #System.assert(Start.classvar2 == 456, "Vars-2.2");
+
+	// Vars-3 Test basic locals
+
+	x = foo;
+        #System.assert(x == 1313, "Vars-3.1");
+
+	// Vars-4 Test locals scoping
+
+	{
+	    a = 13;
+            #System.assert(x == 1313, "Vars-4.1");
+            #System.assert(a == 13, "Vars-4.2");
+	}
+	try (e) {
+	    x = a;
+	}
+	catch {
+            #System.assert(e.type == "system.no-variable"
+	                   && e.name == "a"
+			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+			   "Vars-4.3, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Vars-4.4");
+	}
+	
+	{
+	    x = 42;
+            #System.assert(x == 42, "Vars-4.5");
+	}
+        #System.assert(x == 42, "Vars-4.6");
+
+	{
+	    var x = 99;
+            #System.assert(x == 99, "Vars-4.7");
+	}
+        #System.assert(x == 42, "Vars-4.8");
+    }
+    
+    @classmethod test_consts(cl)
+    {
+	try (e) {
+	    main.#Integer = #nil;
+	}
+	catch {
+            #System.assert(e.type == "system.modify-constant"
+	                   && e.key == "#Integer"
+			   && e.method.write() == "&Codemethod(main.Namespace.atput)",
+			   "Consts-1.1, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Consts-1.2");
+	}
+
+	d = `{ "#foo": 123 };
+	try (e) {
+	    d["#foo"] = 99;
+	}
+	catch {
+            #System.assert(e.type == "system.modify-constant"
+	                   && e.key == "#foo"
+			   && e.method.write() == "&Codemethod(main.Dictionary.atput)",
+			   "Consts-1.3, got: [0]".format(e)
+			   );
+	}
+	none {
+            #System.abort("Consts-1.4");
+	}
+
+        d.del("#foo");
+	d["#foo"] = 99;
+    }
+
+    @classmethod test_classes(cl)
+    {
+        i = Base_Default_Init.new(`{"aa": 123}); 
+	#System.assert(i.instanceof() == Base_Default_Init, "Classes-1.1.1");
+        #System.assert(i.aa == 123, "Classes-1.1.2");
+	a = Base.new(13);
+        #System.assert(a.instanceof() == Base, "Classes-1.1.1");
+        #System.assert(a.x == 13, "Classes-1.1.2");
+        #System.assert(!regexp.Regexp.new("^Base@0x.*{\"x\": 13}$").match(a.write()).isnil(), "Classes-1.1.3");
+	b = Derived.new(42, 99);
+        #System.assert(b.x == 42, "Classes-1.2");
+        #System.assert(b.y == 99, "Classes-1.3");
+	c = Derived2.new(1, 2, 3);
+        #System.assert(c.x == 1, "Classes-1.4");
+        #System.assert(c.y == 2, "Classes-1.5");
+        #System.assert(c.z == 3, "Classes-1.6");	
+    }
+
+    @classmethod test_methods(cl)
+    {
+	recvr = 99;
+	arg = 13;
+        #System.assert(recvr.instanceof().method("add").call(recvr, arg) == recvr.add(arg), "Methods-1");
+    }
+
+    @classmethod test_anon(cl)
+    {
+        #System.assert(@anon(a, b) { return (a + b); }.call(1, 2) == 3, "Anon-1");
+    }
+
+    @classmethod test_while(cl)
+    {
+	i = 0;
+	while (i < 10) {
+	    i += 1;
+	}
+        #System.assert(i == 10, "While-1");
+
+    	i = 0;
+	while (i < 10) {
+	    i += 1;
+	    if (i >= 5) {
+		break;
+	    }
+	}
+        #System.assert(i == 5, "While-2");
+
+	i = 0;
+	li = `();
+	while (i < 10) {
+	    if (i == 5) {
+		i += 1;
+		continue;
+	    }
+	    li = li.cons(i);
+	    i += 1;
+	}
+        #System.assert(li == `(9, 8, 7, 6, 4, 3, 2, 1, 0), "While-3");
+    }
+    
+    @classmethod test_module(cl)
+    {
+        #Module.new("test2");
+    }
+
+    @classmethod test_introspection(cl)
+    {
+        #System.assert(@module == "test2", "Introspection-1");
+        #System.assert(#Namespace.current().name() == @namespace, "Introspection-2");
+        #System.assert(#Metaclass.current().name() == @class, "Introspection-3");
+        #System.assert(@method == "test_introspection", "Introspection-4");
+    }
+
+    @classmethod test_boolean(cl)
+    {
+        #System.assert(#true, "Boolean-1.1");
+        #System.assert(!#false, "Boolean-1.2");
+
+	if (#false) {
+            #System.abort("Boolean-1.3");
+        }
+	ifnot (#true) {
+            #System.abort("Boolean-1.3");
+        }
+
+	#System.assert(#Boolean.new(1), "Boolean-2.1");
+	#System.assert(!#Boolean.new(0), "Boolean-2.2");
+	#System.assert(#Boolean.new("#true"), "Boolean-2.3");
+	#System.assert(!#Boolean.new("#false"), "Boolean-2.4");
+	try (e) {
+            x = #Boolean.new("foo");
+	} catch {
+            #System.assert(e.type == "system.invalid-value"
+		           && e.value == "foo"
+			   && e.method.write() == "&Codemethod(main.String.Boolean)",
+			   "Boolean-2.5, got: [0]".format(e)
+			   );
+        } none {
+            #System.abort("Boolean-2.5");
+        }
+    }
+
+    @classmethod test_integer(cl)
+    {
+        #System.assert(#Integer.new(#true) == 1, "Integer-new-1");
+        #System.assert(#Integer.new(#false) == 0, "Integer-new-2");
+
+        #System.assert(#Integer.new(42) == 42, "Integer-new-3");
+
+        #System.assert(#Integer.new("-456") == -456, "Integer-new-4");
+        #System.assert(#Integer.new("ab", 16) == 171, "Integer-new-5");
+        #System.assert(#Integer.new("0xcd") == 205, "Integer-new-6");
+	try (e) {
+	    x = #Integer.new("foo");
+	} catch {
+            #System.assert(e.type == "system.invalid-value"
+	                   && e.value == "foo"
+			   && e.method.write() == "&Codemethod(main.String.Integer)",
+			   "Integer-new-7, got: [0]".format(e)
+			   );
+	} none {
+            #System.abort("Integer-new-8");
+	}    
+
+        #System.assert((42 + 13) == 55, "Integer-add-1");
+        x = 42;
+        #System.assert((x + 99) == 141, "Integer-add-2");
+        y = 13;
+        #System.assert((x + y + 9) == 64, "Integer-add-3");
+        #System.assert((x + y + 9 + 11) == 75, "Integer-add-4");
+
+        #System.assert((42 - 13) == 29, "Integer-sub-1");
+        #System.assert((x - 25) == 17, "Integer-sub-2");
+        #System.assert((25 - x) == -17, "Integer-sub-3");
+        #System.assert((x - y) == 29, "Integer-sub-4");
+        #System.assert((x - y - 2) == 27, "Integer-sub-5");
+    }
+
+    @classmethod test_string(cl)
+    {
+	s = "Foo the bar";
+        #System.assert(s.size() == 11, "String-size-1");
+
+        #System.assert(s[1] == "o", "String-at-1");
+        #System.assert(s[-2] == "a", "String-at-2");
+	try (e) {
+	    c = s[99];
+	} catch {
+            #System.assert(e.type == "system.index-range"
+	                   && e.instance == s
+			   && e.index == 99
+			   && e.method.write() == "&Codemethod(main.String.at)",
+			   "String-at-3"
+			   );
+	} none {
+            #System.abort("String-at-4");
+	}
+	try (e) {
+	    c = s[-99];
+	} catch {
+            #System.assert(e.type == "system.index-range"
+	                   && e.instance == s
+			   && e.index == -99
+			   && e.method.write() == "&Codemethod(main.String.at)",
+			   "String-at-5"
+			   );
+	} none {
+            #System.abort("String-at-6");
+	}
+
+        #System.assert(s.slice(4, 3) == "the", "String-slice-1");
+        #System.assert(s.slice(-4, -3) == "the", "String-slice-2");
+
+        #System.assert(s.concat(" yesterday") == "Foo the bar yesterday", "String-concat-1");
+        try (e) {
+	    t = s.concat(123);
+	} catch {
+            #System.assert(e.type == "system.invalid-value"
+	                   && e.value == 123
+			   && e.method.write() == "&Codemethod(main.String.concat)",
+			   "String-concat-2"
+			   );
+	} none {
+            #System.abort("String-concat-3");
+	}
+
+        #System.assert("#true".parse(), "String-parse-1");
+        #System.assert(42 == "42".parse(), "String-parse-2");
+        #System.assert("bar" == "\"bar\"".parse(), "String-parse-4");
+        #System.assert(`<"foo", 13> == "<\"foo\", 13>".parse(), "String-parse-5");
+        #System.assert(`("foo", 13, `<#true, "a">)  == "(\"foo\", 13, <#true, \"a\">)".parse(), "String-parse-5");
+    }
+
+    @classmethod test_control(cl)
+    {
+	if (#false) {
+            #System.abort("Control-1.1");
+	}
+	ifnot (#true) {
+            #System.abort("Control-1.2");
+	}
+	if (#true) {
+	} else {
+            #System.abort("Control-1.3");
+	}
+	ifnot (#false) {
+	} else {
+            #System.abort("Control-1.4");
+	}
+    }
+
+    @classmethod start(cl)
+    {
+	Start.test_except();
+	Start.test_vars();
+	Start.test_consts();
+	Start.test_classes();
+	Start.test_methods();
+	Start.test_anon();
+	Start.test_while();
+	Start.test_module();
+	Start.test_introspection();
+	Start.test_boolean();
+	Start.test_integer();
+	Start.test_string();
+	Start.test_control();
+    }    
+}
+
+// Local Variables:
+// mode: c++
+// c-basic-offset: 4
+// End:

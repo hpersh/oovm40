@@ -1,0 +1,38 @@
+///////////////////////////////////////////////////////////////////////////
+//
+// Test the datetime module
+//
+///////////////////////////////////////////////////////////////////////////
+
+#Module.new("datetime");
+Delay    = datetime.Delay;
+Datetime = datetime.Datetime;
+Tm       = datetime.Tm;
+
+@class Start
+{
+	@classmethod start(cl)
+	{
+		time = Datetime.time();
+		"[0]\n".format(time).print();
+
+		"[0]\n".format(Datetime.ctime(time)).print();
+				
+		tm = Tm.new(time);
+		"[0]\n".format(tm).print();
+
+		"sec  = [0]\n".format(tm.tm_sec).print();
+		"min  = [0]\n".format(tm.tm_min).print();
+		"hour = [0]\n".format(tm.tm_hour).print();
+		"mday = [0]\n".format(tm.tm_mday).print();
+		"mon  = [0]\n".format(tm.tm_mon).print();
+		
+		Delay.sleep(5);
+
+		"[0]\n".format(Tm.new(Datetime.time()).cmp(tm)).print();
+	}
+}
+
+// Local Variables:
+// tab-width: 4
+// End:
