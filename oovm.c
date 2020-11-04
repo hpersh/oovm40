@@ -674,7 +674,7 @@ struct __jmp_buf_tag *ovm_frame_except_push(ovm_thread_t th, ovm_inst_t arg)
     return (fr->jb);
 }
 
-static void frame_pop1(ovm_thread_t th)
+static unsigned frame_pop1(ovm_thread_t th)
 {
     struct ovm_frame *fp = th->fp;
     unsigned char *p = (unsigned char *) fp + fp->size;
@@ -682,7 +682,8 @@ static void frame_pop1(ovm_thread_t th)
         OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
     }
 
-    switch (fp->type) {
+    unsigned type = fp->type;
+    switch (type) {
     case OVM_FRAME_TYPE_NAMESPACE:
         th->nsfp = ((struct ovm_frame_ns *) fp)->prev;
         break;
@@ -705,15 +706,23 @@ static void frame_pop1(ovm_thread_t th)
     }
 
     th->fp = (struct ovm_frame *) p;
+
+    return (type);
 }
 
 static void frame_unwind(ovm_thread_t th, struct ovm_frame *fp)
 {
+    if (th->fp >= th->frame_stack_top) {
+        OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
+    }
     while (th->fp < fp)  frame_pop1(th);
 }
 
 static void frame_pop(ovm_thread_t th, struct ovm_frame *fp)
 {
+    if (th->fp >= th->frame_stack_top) {
+        OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
+    }
     while (th->fp <= fp)  frame_pop1(th);
 }
 
@@ -721,12 +730,11 @@ void ovm_frame_except_pop(ovm_thread_t th, unsigned n)
 {
     if (th->except_lvl > 0)  --th->except_lvl;
     DEBUG_ASSERT(th->except_lvl == 0);
-    if ((unsigned char *) th->fp >= th->frame_stack_top) {
+    if (th->fp >= th->frame_stack_top) {
         OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
     }
     while (n > 0) {
-        if (th->fp->type == OVM_FRAME_TYPE_EXCEPTION)  --n;
-        frame_pop1(th);
+        if (frame_pop1(th) == OVM_FRAME_TYPE_EXCEPTION)  --n;
     }
 }
 

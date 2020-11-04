@@ -15,6 +15,7 @@
  */
 /**@{*/
 
+/** \brief Thread fatal error exit codes */
 enum {
     OVM_THREAD_FATAL_ABORTED = 0xe0, /**< Thread called System.abort() */
     OVM_THREAD_FATAL_ASSERT_FAILED, /**< Thread called System.assert(), and assertion failed */
@@ -59,7 +60,7 @@ sp-> entry method arg 1
  *
  * \param[in] arg Thread cookie
  *
- * \return If the entry returns an Integer, this functions returns that value; otherwise, returns nil.
+ * \return If the entry method returns an Integer, this functions returns that value; otherwise, returns nil.
  */
 void *ovm_thread_entry(void *arg);
 
