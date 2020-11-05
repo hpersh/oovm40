@@ -6,7 +6,7 @@
 13 (2)  : 0 0 1 n n n n n . n n n n n n n n
 21 (3)  : 0 1 0 n n n n n . n n n n n n n n . n n n n n n n n
 29 (4)  : 0 1 1 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-32 (5)  : 1 0 0 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+37 (5)  : 1 0 0 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 64 (9)  : 1 0 1 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 80 (11) : 1 1 0 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 
@@ -22,7 +22,7 @@ len+data (data is null-terminated)
 11 (2) : 0 0 1 b b n n n . n n n n n n n n
 19 (3) : 0 1 0 b b n n n . n n n n n n n n . n n n n n n n n
 27 (4) : 0 1 1 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-32 (5) : 1 0 0 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+35 (5) : 1 0 0 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 64 (9) : 1 0 1 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 
 bb
@@ -32,526 +32,91 @@ bb
 11 ...	(requires bits 7..5 to be 0)
    	ofs
 	0	dst
-	1	push
 
 nnn..n is big-endian
 
+* opcode
+
+7 6 5 4 3 2 1 0
+c c c c c c p v
+
+c = operation
+p = push flag (if applicable)
+v = 1-bit value, option, etc. (if applicable)
 
 
 00     noop
 
-01     inst_assign	dst:base+ofs src:base+ofs
+04     inst_assign	dst:base+ofs src:base+ofs
 
-02     stack_free	n:len
+06     stack_push	src:base+ofs
 
-03     stack_alloc	n:len
+08     stack_free	n:len
 
-04     stack_free_alloc	nfree:len nalloc:len
+09     stack_alloc	n:len
 
-05     stack_push	src:base+ofs
+0c     stack_free_alloc	nfree:len nalloc:len
 
-06     method_callc	dst:base+ofs sel:str selhash:uint32 argc:len
+10     method_callc	dst:base+ofs sel:str selhash:uint32 argc:len
 
-07     except_push	var:base+ofs
+14     ret              src:base+ofs
 
-08     except_raise	inst:base+ofs
+15     retd
 
-09     except_reraise
+18     except_push	var:base+ofs
 
-0a     except_popf
+1c     except_raise	inst:base+ofs
 
-0b     except_popn	n:len
+1d     except_reraise
 
-0c     return
+20     except_pop
 
-0d     returnd
+21     except_popn	n:len
 
-10     jmp		addr:ofs
+30     jmp		addr:ofs
 
-11     jt		addr:ofs
+34     jt		addr:ofs
 
-12     jf		addr:ofs
+35     jf		addr:ofs
 
-13     ift		addr:ofs
+38     jx		addr:ofs
 
-14     iff		addr:ofs
+3c     ift		addr:ofs
 
-15     environ_at	dst:base+ofs src:base+ofs
+3d     iff		addr:ofs
 
-16     environ_atc	dst:base+ofs name:str
+40     env_at   	dst:base+ofs src:base+ofs
 
-20     nil_new
+42     env_at_push	src:base+ofs
 
-21     inst_of		dst:base+ofs src:base+ofs
+44     env_atc  	dst:base+ofs name:str
 
-22     inst_is_nil	dst:base+ofs src:base+ofs
+46     env_atc_push	name:str
 
-23     inst_assign_cl	inst:base+ofs cl:base+ofs
+50     nil_new		dst:base+ofs
 
-24     inst_write	dst:base+ofs src:base+ofs
+52     nil_push
 
-80     bool_newc	dst:base+ofs val:uofs
+54,55  bool_newc	dst:base+ofs
 
-81     bool_new		dst:base+ofs src:base+ofs
+56,57  bool_pushc
 
-82 00  bool_not		dst:base+ofs src:base+ofs
+58     int_newc		dst:base+ofs val:val
 
-82 01  bool_and		dst:base+ofs src1:base+ofs src2:base+ofs
+5a     int_pushc	val:val
 
-82 02  bool_or		dst:base+ofs src1:base+ofs src2:base+ofs
+5c     float_newc	dst:base+ofs val:val
 
-82 03  bool_xor		dst:base+ofs src1:base+ofs src2:base+ofs
+5e     float_pushc	val:val
 
-82 04  bool_write	dst:base+ofs src:base+ofs
+60     method_newc	dst:base+ofs addr:ofs
 
-84     int_newc		dst:base+ofs val:val
+62     method_pushc	addr:ofs
 
-85     int_new		dst:base+ofs src:base+ofs
+64     cmethod_newc	dst:base+ofs addr:ofs
 
-86 00  int_minus	dst:base+ofs src:base+ofs
+66     cmethod_pushc	addr:ofs
 
-86 01  int_add		dst:base+ofs src1:base+ofs src2:base+ofs
+68     str_newc		dst:base+ofs str:str
 
-86 02  int_addc		dst:base+ofs src:base+ofs val:val
-
-86 03  int_sub		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 04  int_subc		dst:base+ofs src:base+ofs val:val
-
-86 05  int_mult		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 06  int_multc	dst:base+ofs src:base+ofs val:val
-
-86 07  int_div		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 08  int_divc		dst:base+ofs src:base+ofs val:val
-
-86 09  int_mod		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 0a  int_modc		dst:base+ofs src:base+ofs val:val
-
-86 0b  int_bnot		dst:base+ofs src:base+ofs
-
-86 0c  int_band		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 0d  int_bandc	dst:base+ofs src:base+ofs val:val
-
-86 0e  int_bor		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 0f  int_borc		dst:base+ofs src:base+ofs val:val
-
-86 10  int_bxor		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 11  int_bxorc	dst:base+ofs src:base+ofs val:val
-
-86 12  int_lsh		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 13  int_lshc		dst:base+ofs src:base+ofs val:val
-
-86 14  int_rsh		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 15  int_rshc		dst:base+ofs src:base+ofs val:val
-
-86 16  int_eq		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 17  int_eqc		dst:base+ofs src:base+ofs val:val
-
-86 18  int_lt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 19  int_ltc		dst:base+ofs src:base+ofs val:val
-
-86 1a  int_le		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 1b  int_lec		dst:base+ofs src:base+ofs val:val
-
-86 1c  int_gt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 1d  int_gtc		dst:base+ofs src:base+ofs val:val
-
-86 1e  int_ge		dst:base+ofs src1:base+ofs src2:base+ofs
-
-86 1f  int_gec		dst:base+ofs src:base+ofs val:val
-
-86 20  int_write	dst:base+ofs src:base+ofs
-
-88     float_newc	dst:base+ofs val:val
-
-89     float_new	dst:base+ofs src:base+ofs
-
-8a 00  float_minus	dst:base+ofs src:base+ofs
-
-8a 01  float_add	dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 02  float_addc	dst:base+ofs src:base+ofs val:val
-
-8a 03  float_sub	dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 04  float_subc	dst:base+ofs src:base+ofs val:val
-
-8a 05  float_mult	dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 06  float_multc	dst:base+ofs src:base+ofs val:val
-
-8a 07  float_div	dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 08  float_divc	dst:base+ofs src:base+ofs val:val
-
-8a 09  float_eq		dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 0a  float_eqc	dst:base+ofs src:base+ofs val:val
-
-8a 0b  float_lt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 0c  float_ltc	dst:base+ofs src:base+ofs val:val
-
-8a 0d  float_le		dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 0e  float_lec	dst:base+ofs src:base+ofs val:val
-
-8a 0f  float_gt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 10  float_gtc	dst:base+ofs src:base+ofs val:val
-
-8a 11  float_ge		dst:base+ofs src1:base+ofs src2:base+ofs
-
-8a 12  float_gec	dst:base+ofs src:base+ofs val:val
-
-8a 13  float_write	dst:base+ofs src:base+ofs
-
-8c     method_newc	dst:base+ofs addr:ofs
-
-8d 00  method_call	dst:base+ofs args:base+ofs
-
-8d 01  method_write	dst:base+ofs src:base+ofs
-
-90     str_newc		dst:base+ofs str:str
-
-91     str_new		dst:base+ofs src:base+ofs
-
-92 00  str_size		dst:base+ofs src:base+ofs
-
-92 01  str_concat	dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 02  str_join         dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 03  str_joinc        dst:base+ofs src:base+ofs str:str
-
-92 04  str_slice	dst:base+ofs src:base+ofs ofs:base+ofs len:base+ofs 
-
-92 05  str_slicec	dst:base+ofs src:base+ofs ofs:ofs len:ofs
-
-92 06  str_eq		dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 07  str_eqc		dst:base+ofs src:base+ofs str:str
-
-92 08  str_lt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 09  str_ltc		dst:base+ofs src:base+ofs str:str
-
-92 0a  str_le		dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 0b  str_lec		dst:base+ofs src:base+ofs str:str
-
-92 0c  str_gt		dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 0d  str_gtc		dst:base+ofs src:base+ofs str:str
-
-92 0e  str_ge		dst:base+ofs src1:base+ofs src2:base+ofs
-
-92 0f  str_gec		dst:base+ofs src:base+ofs str:str
-
-92 10  str_write	dst:base+ofs src:base+ofs
-
-94     pair_new		dst:base+ofs first:base+ofs second:base+ofs
-
-95 00  pair_first	dst:base+ofs src:base+ofs
-
-95 01  pair_second	dst:base+ofs src:base+ofs
-
-95 02  pair_write	dst:base+ofs src:base+ofs
-
-98     list_new		dst:base+ofs car:base+ofs cdr:base+ofs
-
-99 00  list_car		dst:base+ofs src:base+ofs
-
-99 01  list_cdr		dst:base+ofs src:base+ofs
-
-99 02  list_concat	dst:base+ofs src1:base+ofs src2:base+ofs
-
-99 02  list_write	dst:base+ofs src:base+ofs
-
-9c     array_newc	dst:base+ofs size:len
-
-9d     array_new	dst:base+ofs src:base+ofs
-
-9e 00  array_size
-
-9e 01  array_at
-
-9e 02  array_atc
-
-9e 03  array_at_put
-
-9e 04  array_atc_put
-
-9e 06  array_slice
-
-9e 07  array_slicec
-
-9e 05  array_write
-
-a0     barray_newc	dst:base+ofs size:len
-
-a1     barray_new	dst:base+ofs src:base+ofs
-
-a2 00  barray_size
-
-a2 01  barray_at
-
-a2 02  barray_atc
-
-a2 03  barray_at_put
-
-a2 04  barray_atc_put
-
-a2 06  barray_slice
-
-a2 07  barray_slicec
-
-a2 05  barray_write
-
-a4     set_newc
-
-a8     dict_newc
-
-ac     ns_new
-
-ad 00  ns_name		dst:base+ofs src:base+ofs
-
-ad 01  ns_parent	dst:base+ofs src:base+ofs
-
-ad 02  ns_dict		dst:base+ofs src:base+ofs
-
-b0     module_new	dst:base+ofs name:base+ofs
-
-b1 00  module_filename	dst:base+ofs src:base+ofs
-
-b1 01  module_sha1	dst:base+ofs src:base+ofs
-
-b4     file_new		dst:base+ofs name:base+ofs mode:base+ofs
-
-b5 00  file_name	dst:base+ofs src:base+ofs
-
-b5 01  file_mode	dst:base+ofs src:base+ofs
-
-b8     class_new	dst:base+ofs name:base+ofs parent:base+ofs ns:base+ofs
-
-b9 00  class_name	dst:base+ofs src:base+ofs
-
-b9 01  class_parent	dst:base+ofs src:base+ofs
-
-b9 02  class_ns		dst:base+ofs src:base+ofs
-
-b9 03  class_cl_vars	dst:base+ofs src:base+ofs
-
-b9 04  class_cl_methods	dst:base+ofs src:base+ofs
-
-b9 05  class_methods	dst:base+ofs scr:base+ofs
-
-
-
-
-
-
-
-
-
-
-
-
-       pair_new		dst:base+ofs car:base+ofs cdr:base+ofs
-
-2b     list_new		dst:base+ofs car:base+ofs cdr:base+ofs
-
-2c     array_newc	dst:base+ofs size:len
-
-2d     array_new	dst:base+ofs src:base+ofs
-
-2e     barray_newc	dst:base+ofs size:len
-
-2f     barray_new	dst:base+ofs src:base+ofs
-
-30     set_newc		dst:base+ofs size:len
-
-31     set_new		dst:base+ofs src:base+ofs
-
-32     dict_newc	dst:base+ofs size:len
-
-33     dict_new		dst:base+ofs src:base+ofs
-
-34     ns_new		dst:base+ofs name:base+ofs parent:base+ofs
-
-35     module_new	dst:base+ofs ns:base+ofs filename:base+ofs
-
-36     file_new		dst:base+ofs name:base+ofs mode:base+ofs
-
-37     class_new	dst:base+ofs name:base+ofs parent:base+ofs ns:base+ofs
-
-
-
-
-
-
-66     int_write	dst:base+ofs src:base+ofs
-
-
-80     method_call	dst:base+ofs method:base+ofs args:base+ofs 
-
-81     method_write	dst:base+ofs src:base+ofs
-
-90     str_size		dst:base+ofs src:base+ofs
-
-91     str_concat	dst:base+ofs src1:base+ofs src2:base+ofs
-
-92     str_slice	dst:base+ofs src:base+ofs ofs:base+ofs len:base+ofs 
-
-93     str_slicec	dst:base+ofs src:base+ofs ofs:ofs len:ofs
-
-       str_eq
-
-       str_lt
-
-       str_le
-
-       str_gt
-
-       str_ge
-
-94     str_write	dst:base+ofs src:base+ofs
-
-a0     pair_first	dst:base+ofs src:base+ofs
-
-a1     pair_second	dst:base+ofs src:base+ofs
-
-a2     pair_write	dst:base+ofs src:base+ofs
-
-b0     list_car		dst:base+ofs src:base+ofs
-
-b1     list_cdr		dst:base+ofs src:base+ofs
-
-b2     list_concat	dst:base+ofs src1:base+ofs src2:base+ofs
-
-b3     list_write	dst:base+ofs src:base+ofs
-
-c0     array_size	dst:base+ofs src:base+ofs
-
-c1     array_at		dst:base+ofs src:base+ofs idx:base+ofs
-
-c2     array_atc	dst:base+ofs src:base+ofs idx:ofs
-
-c3     array_slice	dst:base+ofs src:base+ofs ofs:base+ofs len:base+ofs 
-
-c4     array_slicec	dst:base+ofs src:base+ofs ofs:ofs len:ofs
-
-c5     array_at_put	src:base+ofs idx:base+ofs val:base+ofs
-
-c6     array_atc_put	src:base+ofs idx:ofs val:base+ofs
-
-c7     array_write	dst:base+ofs src:base+ofs
-
-c8     barray_size	dst:base+ofs src:base+ofs
-
-c9     barray_at	dst:base+ofs src:base+ofs idx:base+ofs
-
-86     barray_atc	dst:base+ofs src:base+ofs idx:ofs
-
-cb     barray_slice	dst:base+ofs src:base+ofs ofs:base+ofs len:base+ofs 
-
-cc     barray_slicec	dst:base+ofs src:base+ofs ofs:ofs len:ofs
-
-cd     barray_at_put	src:base+ofs idx:base+ofs val:base+ofs
-
-8a     barray_atc_put	src:base+ofs idx:ofs val:base+ofs
-
-cf     barray_write	dst:base+ofs src:base+ofs
-
-d0     set_size
-
-d1     set_member
-
-d2     set_put
-
-d3     set_write
-
-d4     dict_size
-
-d5     dict_at
-
-92     dict_atc
-
-d7     dict_at_put
-
-d8     dict_atc_put
-
-d9     dict_write
-
-e0     ns_name
-
-e1     ns_parent
-
-9e     ns_dict
-
-e3     module_ns
-
-e4     module_filename
-
-e5     module_sha1
-
-a2     module_load
-
-e8     file_name
-
-e9     file_mode
-
-f0     class_name
-
-f1     class_parent
-
-f2     class_ns
-
-f3     class_vars
-
-f4     class_methods
-
-f5     class_cl_methods
-
-
-
-
-
-
-
-
-enivron_at_pushc
-16 str:str
-
-environ_atc
-17 dst:base+ofs str:str
-
-return
-18
-
-jmp
-20 ofs
-
-jf
-21 ofs
-
-jt
-22 ofs
-
-iff
-23 ofs
-
-ift
-24 ofs
+6a     str_pushc	str:str

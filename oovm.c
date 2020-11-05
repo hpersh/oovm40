@@ -467,16 +467,12 @@ static ovm_obj_t _obj_alloc(ovm_inst_t dst, unsigned size, ovm_obj_class_t cl, i
 {
     _ovm_objs_lock();
 
-    ovm_obj_t result = (ovm_obj_t) ovm_mem_alloc(size, mem_hint, false);
+    ovm_obj_t result = (ovm_obj_t) ovm_mem_alloc(size, mem_hint, true);
     ovm_dllist_insert(result->list_node, ovm_dllist_end(obj_list_white));
     result->size = size;
     _ovm_obj_assign_nolock_norelease(&result->inst_of, cl->base);
     pthread_mutex_init(result->mutex, obj_mutex_attr);
-    if (init == 0) {
-        memset(result + 1, 0, size - sizeof(*result));
-    } else {
-        (*init)(result, ap);
-    }
+    if (init != 0)  (*init)(result, ap);
     _ovm_inst_assign_obj_nolock(dst, result);
 
     _ovm_objs_unlock();
@@ -712,7 +708,7 @@ static unsigned frame_pop1(ovm_thread_t th)
 
 static void frame_unwind(ovm_thread_t th, struct ovm_frame *fp)
 {
-    if (th->fp >= th->frame_stack_top) {
+    if ((unsigned char *) th->fp >= th->frame_stack_top) {
         OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
     }
     while (th->fp < fp)  frame_pop1(th);
@@ -720,7 +716,7 @@ static void frame_unwind(ovm_thread_t th, struct ovm_frame *fp)
 
 static void frame_pop(ovm_thread_t th, struct ovm_frame *fp)
 {
-    if (th->fp >= th->frame_stack_top) {
+    if ((unsigned char *) th->fp >= th->frame_stack_top) {
         OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
     }
     while (th->fp <= fp)  frame_pop1(th);
@@ -730,7 +726,7 @@ void ovm_frame_except_pop(ovm_thread_t th, unsigned n)
 {
     if (th->except_lvl > 0)  --th->except_lvl;
     DEBUG_ASSERT(th->except_lvl == 0);
-    if (th->fp >= th->frame_stack_top) {
+    if ((unsigned char *) th->fp >= th->frame_stack_top) {
         OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, 0);
     }
     while (n > 0) {
@@ -2661,6 +2657,68 @@ static inline void method_findc_unsafe(ovm_thread_t th, ovm_inst_t dst, ovm_inst
     if (!method_findc_noexcept_unsafe(th, dst, recvr, sel_size, sel, sel_hash, found_cl))  ovm_except_no_methodc(th, recvr, sel_size, sel);
 }
 
+static ovm_inst_t interp_base_ofs(ovm_thread_t th)
+{
+    unsigned char op = *th->pc;
+
+    long long ofs = op & 0x07;
+    unsigned n = op >> 5;
+    if (n == 5) {
+        n = 8;
+    } else if (n > 5) {
+        OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+    }
+    ++th->pc;
+    unsigned k;
+    for (k = n; k > 0; --k, ++th->pc) {
+        ofs = (ofs << 8) | *th->pc;
+    }
+
+    struct ovm_frame_mc *mcfp = thread_mcfp(th);
+    ovm_inst_t result;
+    switch (op & 0x18) {
+    case 0:
+        if (ofs < 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        result = th->sp + ofs;
+        if (result >= mcfp->bp)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        break;
+    case 0x08:
+        if (ofs >= 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        result = mcfp->bp + ofs;
+        if (result < th->sp)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        break;
+    case 0x10:
+        if (ofs < 0 || ofs >= mcfp->argc)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        result = mcfp->ap + ofs;
+        break;
+    default:
+        if (n != 0 || ofs != 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        result = mcfp->dst;
+    }
+
+    return (result);
+}
+
+static void interp(ovm_thread_t th, ovm_method_t m)
+{
+    th->pc = m;
+    for (;;) {
+        unsigned char opcode = *th->pc;
+        switch (opcode & ~0x03) {
+        case 0x00:
+            ++th->pc;
+            break;
+
+        case 0x04:
+            {
+                ovm_inst_t dst = interp_base_ofs(th);
+                ovm_inst_assign(dst, interp_base_ofs(th));
+            }
+            break;
+        }
+    }
+}
+
 static inline void method_run(ovm_thread_t th, ovm_inst_t dst, ovm_obj_ns_t ns, ovm_obj_class_t cl, ovm_inst_t method, unsigned argc, ovm_inst_t argv)
 {
     struct ovm_frame *fr = frame_mc_push(th, dst, cl, method, argc, argv);
@@ -2671,11 +2729,9 @@ static inline void method_run(ovm_thread_t th, ovm_inst_t dst, ovm_obj_ns_t ns, 
     case OVM_INST_TYPE_CODEMETHOD:
         (*method->codemethodval)(th, dst, argc, argv);
         break;
-#if 0
     case OVM_INST_TYPE_METHOD:
         interp(th, method->methodval);
         break;
-#endif
     default:
         abort();
     }
@@ -8222,7 +8278,7 @@ int ovm_run(ovm_thread_t th, ovm_inst_t dst, char *entry_module, char *entry_cl,
         return (-3);
     }
 
-    ovm_obj_list_t li = li = str_splitc_unsafe(th, &work[-5], strlen(entry_cl) + 1, entry_cl, _OVM_STR_CONST(".")), next;
+    ovm_obj_list_t li = str_splitc_unsafe(th, &work[-5], strlen(entry_cl) + 1, entry_cl, _OVM_STR_CONST(".")), next;
     ovm_obj_str_t s;
     for (;;) {
         s = ovm_inst_strval_nochk(li->item);
@@ -8261,14 +8317,14 @@ int ovm_run(ovm_thread_t th, ovm_inst_t dst, char *entry_module, char *entry_cl,
         goto method_not_found;
     }
 
-    run_entry_method(th, dst, ovm_inst_nsval_nochk(&work[-4]), ovm_inst_classval_nochk(&work[-5]), &work[-6], argc, argv);
+    run_entry_method(th, dst, 0, ovm_inst_classval_nochk(&work[-5]), &work[-6], argc, argv);
 
     ovm_stack_unwind(th, work);
 
     return (0);
 }
 
-void ovm_run_static(ovm_thread_t th, ovm_inst_t dst, ovm_codemethod_t init, ovm_obj_class_t entry_cl, ovm_codemethod_t entry, int argc, char **argv)
+void ovm_run_static(ovm_thread_t th, ovm_inst_t dst, ovm_codemethod_t init, ovm_codemethod_t entry, int argc, char **argv)
 {
     ovm_inst_t work = ovm_stack_alloc(th, 1);
 
@@ -8276,7 +8332,7 @@ void ovm_run_static(ovm_thread_t th, ovm_inst_t dst, ovm_codemethod_t init, ovm_
     (*init)(th, &work[-1], 0, 0);
 
     ovm_codemethod_newc(&work[-1], entry);
-    run_entry_method(th, dst, ovm_obj_ns(ns_main), entry_cl, &work[-1], argc, argv);
+    run_entry_method(th, dst, ovm_obj_ns(ns_main), 0, &work[-1], argc, argv);
 
     ovm_stack_unwind(th, work);
 }

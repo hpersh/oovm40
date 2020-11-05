@@ -163,12 +163,11 @@ int ovm_run(ovm_thread_t th, ovm_inst_t dst, char *entry_module, char *entry_cl,
  * \param[in] th Thread
  * \param[out] dst Where to store result of entry method
  * \param[in] init Module init function
- * \param[in] entry_cl Class for entry method
  * \param[in] entry Entry method
  * \param[in] argc Number of arguments in argv
- * \param[in] argv Array of method arguments (strings)
+ * \param[in] argv Array of entry method arguments (strings)
  */
-void ovm_run_static(ovm_thread_t th, ovm_inst_t dst, ovm_codemethod_t init, ovm_obj_class_t entry_cl, ovm_codemethod_t entry, int argc, char **argv);
+void ovm_run_static(ovm_thread_t th, ovm_inst_t dst, ovm_codemethod_t init, ovm_codemethod_t entry, int argc, char **argv);
 
 /**@}*/
 
@@ -519,6 +518,7 @@ struct __jmp_buf_tag *ovm_frame_except_push(ovm_thread_t th, ovm_inst_t arg);
  * Pop the given number of exception frames.  An example of where this might be
  * > 1 is breaking out from nested exception frame pushes.
  *
+ * \param[in] th Thread
  * \param[in] n Number of exception frames to pop
  *
  * \return Nothing
@@ -550,12 +550,13 @@ static inline bool ovm_except_chk(ovm_thread_t th)
  * internal exception-occurred flag will be set [see ovm_except_chk()].
  * 
  * \param[in] th Thread
- * \param[in] arg Exception argument
+ * \param[in] arg Exception argument; assigned to instance given in
+ * ovm_frame_except_push().
  *
  * \return Never returns
  *
  * \note If no exception frame has been pushed, the thread will terminate, with an
- * error code of OVM_THREAD_FATAL_UNCAUGHT_EXCEPT.
+ * exit code of OVM_THREAD_FATAL_UNCAUGHT_EXCEPT.
  */
 void ovm_except_raise(ovm_thread_t th, ovm_inst_t arg) __attribute__((noreturn));
 
@@ -570,7 +571,8 @@ void ovm_except_raise(ovm_thread_t th, ovm_inst_t arg) __attribute__((noreturn))
  * \return Never returns 
  *
  * \note If no exception frame has been
- * pushed, or this function is called when no exception has occurred, the thread will terminate, with an error code of OVM_THREAD_FATAL_NO_FRAME.
+ * pushed, or this function is called when no exception has occurred, the thread
+ * will terminate, with an exit code of OVM_THREAD_FATAL_NO_FRAME.
  */
 void ovm_except_reraise(ovm_thread_t th) __attribute__((noreturn));
 
@@ -735,7 +737,8 @@ void ovm_except_descent_loop(ovm_thread_t th) __attribute__((noreturn));
  *
  * \return Stack pointer before allocation occured
  *
- * \note Exceeding the size of the thread's stack will cause the thread to exit, with the error code OOVM_THREAD_FATAL_STACK_OVERFLOW (see oovm_thread.h).
+ * \note Exceeding the size of the thread's stack will cause the thread to exit,
+ * with the exit code OOVM_THREAD_FATAL_STACK_OVERFLOW (see oovm_thread.h).
  */
 static inline ovm_inst_t ovm_stack_alloc(ovm_thread_t th, unsigned n)
 {
@@ -754,7 +757,8 @@ static inline ovm_inst_t ovm_stack_alloc(ovm_thread_t th, unsigned n)
  *
  * \return Nothing
  *
- * \note Exceeding the size of the thread's stack will cause the thread to exit, with the error code OOVM_THREAD_FATAL_STACK_OVERFLOW (see oovm_thread.h).
+ * \note Exceeding the size of the thread's stack will cause the thread to exit,
+ * with the exit code OOVM_THREAD_FATAL_STACK_OVERFLOW (see oovm_thread.h).
  */
 static inline void ovm_stack_push_obj(ovm_thread_t th, ovm_obj_t obj)
 {
@@ -776,7 +780,7 @@ static inline void ovm_stack_push_obj(ovm_thread_t th, ovm_obj_t obj)
  * \return Nothing
  *
  * \note Exceeding the thread's maximum stack size will cause the thread to
- * exit, with the error code OOVM_THREAD_FATAL_STACK_OVERFLOW (see
+ * exit, with the exit code OOVM_THREAD_FATAL_STACK_OVERFLOW (see
  * oovm_thread.h).
  */
 static inline void ovm_stack_push(ovm_thread_t th, ovm_inst_t inst)
@@ -803,7 +807,7 @@ static inline void ovm_stack_push(ovm_thread_t th, ovm_inst_t inst)
  * \return Nothing
  *
  * \note Giving a stack position beyond the top of the thread's stack will cause
- * the thread to exit, with the error code OVM_THREAD_FATAL_STACK_UNDERFLOW.
+ * the thread to exit, with the exit code OVM_THREAD_FATAL_STACK_UNDERFLOW.
  */
 static inline void ovm_stack_unwind(ovm_thread_t th, ovm_inst_t p)
 {
@@ -830,7 +834,7 @@ static inline void ovm_stack_unwind(ovm_thread_t th, ovm_inst_t p)
  * \return Nothing
  *
  * \note Giving a number of instances larger than the thread's current stack size will cause
- * the thread to exit, with the error code OVM_THREAD_FATAL_STACK_UNDERFLOW.
+ * the thread to exit, with the exit code OVM_THREAD_FATAL_STACK_UNDERFLOW.
  */
 static inline void ovm_stack_free(ovm_thread_t th, unsigned n)
 {
@@ -850,23 +854,24 @@ static inline void ovm_stack_free(ovm_thread_t th, unsigned n)
  * \return Stack pointer after free and before allocation
  *
  * \note Giving a number of instances to free larger than the thread's current stack size will cause
- * the thread to exit, with the error code OVM_THREAD_FATAL_STACK_UNDERFLOW.
+ * the thread to exit, with the exit code OVM_THREAD_FATAL_STACK_UNDERFLOW.
  * Allocating a number of instances that will exceeed the thread's stack maximum
  * size size will cause
- * the thread to exit, with the error code OVM_THREAD_FATAL_STACK_OVERFLOW.
+ * the thread to exit, with the exit code OVM_THREAD_FATAL_STACK_OVERFLOW.
  */
 static inline ovm_inst_t ovm_stack_free_alloc(ovm_thread_t th, unsigned size_free, unsigned size_alloc)
 {
     ovm_inst_t p = th->sp;
     if ((p + size_free) > th->stack_top)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_STACK_UNDERFLOW, 0);
-    unsigned n;
     if (size_alloc >= size_free) {
+        unsigned n;
         for (n = size_free; n > 0; --n, ++p)  ovm_inst_assign_obj(p, 0);
         ovm_stack_alloc(th, size_alloc - size_free);
-        return (p);
+    } else {
+        ovm_stack_free(th, size_free - size_alloc);
+        for (p = th->sp; size_alloc > 0; --size_alloc, ++p)  ovm_inst_assign_obj(p, 0);
     }
-    ovm_stack_free(th, size_free - size_alloc);
-    for (p = th->sp, n = size_alloc; n > 0; --n, ++p)  ovm_inst_assign_obj(p, 0);
+    
     return (p);
 }
 
@@ -898,11 +903,12 @@ static inline ovm_obj_str_t ovm_inst_strval_nochk(ovm_inst_t inst)
  * \brief Return pair value of instance
  *
  * Return the pair value for an instance of Pair.
- * The instance is not checked that is in fact a Pair.
  *
  * \param[in] inst Instance
  *
  * \return Pair object
+ *
+ * \note The instance is not checked that is in fact a Pair.
  */
 static inline ovm_obj_pair_t ovm_inst_pairval_nochk(ovm_inst_t inst)
 {
@@ -913,11 +919,12 @@ static inline ovm_obj_pair_t ovm_inst_pairval_nochk(ovm_inst_t inst)
  * \brief Return list value of instance
  *
  * Return the list value for an instance of List.
- * The instance is not checked that is in fact a List.
  *
  * \param[in] inst Instance
  *
  * \return List object
+ *
+ * \note The instance is not checked that is in fact a List.
  */
 static inline ovm_obj_list_t ovm_inst_listval_nochk(ovm_inst_t inst)
 {
@@ -928,11 +935,12 @@ static inline ovm_obj_list_t ovm_inst_listval_nochk(ovm_inst_t inst)
  * \brief Return array value of instance
  *
  * Return the array value for an instance of Array or Carray.
- * The instance is not checked that is in fact an Array or Carray.
  *
  * \param[in] inst Instance
  *
  * \return Array object
+ *
+ * \note The instance is not checked that is in fact an Array or Carray.
  */
 static inline ovm_obj_array_t ovm_inst_arrayval_nochk(ovm_inst_t inst)
 {
@@ -943,11 +951,12 @@ static inline ovm_obj_array_t ovm_inst_arrayval_nochk(ovm_inst_t inst)
  * \brief Return bytearray value of instance
  *
  * Return the bytearray value for an instance of Bytearray or Cbytearray.
- * The instance is not checked that is in fact a Bytearray or Cbytearray.
  *
  * \param[in] inst Instance
  *
  * \return Array object
+ *
+ * \note The instance is not checked that is in fact a Bytearray or Cbytearray.
  */
 static inline ovm_obj_barray_t ovm_inst_barrayval_nochk(ovm_inst_t inst)
 {
@@ -958,37 +967,93 @@ static inline ovm_obj_barray_t ovm_inst_barrayval_nochk(ovm_inst_t inst)
  * \brief Return slice value of instance
  *
  * Return the slice value for an instance of Slice or Cslice.
- * The instance is not checked that is in fact a Bytearray or Cbytearray.
  *
  * \param[in] inst Instance
  *
  * \return Array object
+ *
+ * \note The instance is not checked that is in fact a Slice or Cslice.
  */
 static inline ovm_obj_slice_t ovm_inst_sliceval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_slice(inst->objval));
 }
 
+/**
+ * \brief Return set value of instance
+ *
+ * Return the set value for an instance of Set, Cset, Dictionary or CDictionary.
+ *
+ * \param[in] inst Instance
+ *
+ * \return Set object
+ *
+ * \note The instance is not checked that is in fact a Set, Cset, Dictionary or CDictionary.
+ */
 static inline ovm_obj_set_t ovm_inst_setval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_set(inst->objval));
 }
 
+/**
+ * \brief Return class value of instance
+ *
+ * Return the class value for an instance of Metaclass.
+ *
+ * \param[in] inst Instance
+ *
+ * \return Class object
+ *
+ * \note The instance is not checked that is in fact a class.
+ */
 static inline ovm_obj_class_t ovm_inst_classval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_class(inst->objval));
 }
 
+/**
+ * \brief Return namespace value of instance
+ *
+ * Return the namespace value for an instance of Namespace.
+ *
+ * \param[in] inst Instance
+ *
+ * \return Namespace object
+ *
+ * \note The instance is not checked that is in fact a Namespace.
+ */
 static inline ovm_obj_ns_t ovm_inst_nsval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_ns(inst->objval));
 }
 
+/**
+ * \brief Return module value of instance
+ *
+ * Return the module value for an instance of Module.
+ *
+ * \param[in] inst Instance
+ *
+ * \return Module object
+ *
+ * \note The instance is not checked that is in fact a Module.
+ */
 static inline ovm_obj_module_t ovm_inst_moduleval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_module(inst->objval));
 }
 
+/**
+ * \brief Return file value of instance
+ *
+ * Return the file value for an instance of File.
+ *
+ * \param[in] inst Instance
+ *
+ * \return File object
+ *
+ * \note The instance is not checked that is in fact a File.
+ */
 static inline ovm_obj_file_t ovm_inst_fileval_nochk(ovm_inst_t inst)
 {
     return (ovm_obj_file(inst->objval));
@@ -1067,7 +1132,7 @@ static inline ovm_method_t ovm_inst_methodval(ovm_thread_t th, ovm_inst_t inst)
 }
 
 /**
- * \brief Return code method value of instance
+ * \brief Return codemethod value of instance
  *
  * Return the code method value for an instance of Codemethod
  *

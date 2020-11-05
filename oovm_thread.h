@@ -19,6 +19,7 @@
 enum {
     OVM_THREAD_FATAL_ABORTED = 0xe0, /**< Thread called System.abort() */
     OVM_THREAD_FATAL_ASSERT_FAILED, /**< Thread called System.assert(), and assertion failed */
+    OVM_THREAD_FATAL_INVALID_OPCODE, /**< Invalid opcde */
     OVM_THREAD_FATAL_STACK_OVERFLOW,  /**< Instance stack overflow */
     OVM_THREAD_FATAL_STACK_UNDERFLOW, /**< Instance stack underflow */
     OVM_THREAD_FATAL_FRAME_STACK_OVERFLOW, /**< Frame stack overflow */
