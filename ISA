@@ -1,6 +1,6 @@
 
 
-* len (unsigned), ofs (signed), uofs (unsigned), val (signed)
+* len (unsigned), ofs (signed), uofs (unsigned), val (signed), uval (unsigned)
 
  5 (1)  : 0 0 0 n n n n n
 13 (2)  : 0 0 1 n n n n n . n n n n n n n n
@@ -37,86 +37,78 @@ nnn..n is big-endian
 
 * opcode
 
-7 6 5 4 3 2 1 0
-c c c c c c p v
-
-c = operation
-p = push flag (if applicable)
-v = 1-bit value, option, etc. (if applicable)
-
-
 00     noop
+
+01     stack_free	n:len
+
+02     stack_alloc	n:len
+
+03     stack_free_alloc	nfree:len nalloc:len
 
 04     inst_assign	dst:base+ofs src:base+ofs
 
-06     stack_push	src:base+ofs
+05     stack_push	src:base+ofs
 
-08     stack_free	n:len
+06     method_callc	dst:base+ofs sel:str selhash:uint32 argc:len
 
-09     stack_alloc	n:len
+07     ret
 
-0c     stack_free_alloc	nfree:len nalloc:len
+08     retd
 
-10     method_callc	dst:base+ofs sel:str selhash:uint32 argc:len
+09     except_push	var:base+ofs
 
-14     ret              src:base+ofs
+0a     except_raise	inst:base+ofs
 
-15     retd
+0b     except_reraise
 
-18     except_push	var:base+ofs
+0c     except_pop
 
-1c     except_raise	inst:base+ofs
+0d     except_popn	n:len
 
-1d     except_reraise
+0e     jmp		ofs:ofs
 
-20     except_pop
+0f     jt		ofs:ofs
 
-21     except_popn	n:len
+10     jf		ofs:ofs
 
-30     jmp		addr:ofs
+11     jx		ofs:ofs
 
-34     jt		addr:ofs
+12     ift		ofs:ofs
 
-35     jf		addr:ofs
+13     iff		ofs:ofs
 
-38     jx		addr:ofs
+14     env_atc  	dst:base+ofs name:str
 
-3c     ift		addr:ofs
+15     env_atc_push	name:str
 
-3d     iff		addr:ofs
+16     nil_new		dst:base+ofs
 
-40     env_at   	dst:base+ofs src:base+ofs
+17     nil_push
 
-42     env_at_push	src:base+ofs
+18,19  bool_newc	dst:base+ofs
 
-44     env_atc  	dst:base+ofs name:str
+1a,1b  bool_pushc
 
-46     env_atc_push	name:str
+1c     int_newc		dst:base+ofs val:val
 
-50     nil_new		dst:base+ofs
+1d     int_pushc	val:val
 
-52     nil_push
+1e     float_newc	dst:base+ofs val:floatval
 
-54,55  bool_newc	dst:base+ofs
+1f     float_pushc	val:floatval
 
-56,57  bool_pushc
+20     method_newc	dst:base+ofs addr:ofs
 
-58     int_newc		dst:base+ofs val:val
+21     method_pushc	addr:ofs
 
-5a     int_pushc	val:val
+22     cmethod_newc	dst:base+ofs addr:ofs
 
-5c     float_newc	dst:base+ofs val:val
+23     cmethod_pushc	addr:ofs
 
-5e     float_pushc	val:val
+24     str_newc		dst:base+ofs str:str
 
-60     method_newc	dst:base+ofs addr:ofs
+25     str_pushc	str:str
 
-62     method_pushc	addr:ofs
+26     str_newc_hash	dst:base+ofs str:str hash
 
-64     cmethod_newc	dst:base+ofs addr:ofs
-
-66     cmethod_pushc	addr:ofs
-
-68     str_newc		dst:base+ofs str:str
-
-6a     str_pushc	str:str
+27     str_pushc_hash	str:str

@@ -48,7 +48,8 @@ typedef struct ovm_inst *ovm_inst_t;
 struct ovm_thread;
 typedef struct ovm_thread *ovm_thread_t;
 
-typedef long long   ovm_intval_t;
+typedef long long          ovm_intval_t;
+typedef unsigned long long ovm_uintval_t;
 typedef long double ovm_floatval_t;
 typedef void (*ovm_codemethod_t)(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t argv);
 typedef unsigned char *ovm_method_t;

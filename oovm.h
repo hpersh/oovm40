@@ -1401,6 +1401,14 @@ static inline void ovm_method_newc(ovm_inst_t dst, ovm_method_t m)
     _ovm_objs_unlock();
 }
 
+static inline void ovm_method_pushc(ovm_thread_t th, ovm_method_t m)
+{
+    ovm_inst_t p = _ovm_stack_alloc(th, 1);
+    OVM_INST_INIT(p, OVM_INST_TYPE_METHOD, methodval, m);
+
+    th->sp = p;
+}
+
 static inline void ovm_codemethod_newc(ovm_inst_t dst, ovm_codemethod_t m)
 {
     _ovm_objs_lock();
