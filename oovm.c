@@ -2667,51 +2667,33 @@ static unsigned interp_uint32(ovm_thread_t th)
 static long long _interp_intval(ovm_thread_t th, unsigned initial_bits, bool unsignedf)
 {
     unsigned char op = *th->pc;
-    long long result = op & ((1 << initial_bits) -1);
-    unsigned n = op >> 5, sign_bit;
-    switch (n) {
-    case 0:
-        sign_bit = initial_bits - 1;
-        break;
-    case 1:
-        sign_bit = initial_bits + 8 - 1;
-        break;
-    case 2:
-        sign_bit = initial_bits + 16 - 1;
-        break;
-    case 3:
-        sign_bit = initial_bits + 24 - 1;
-        break;
-    case 4:
-        sign_bit = initial_bits + 32 - 1;
-        break;
-    case 5:
-        n = 8;
-        result = 0;
-        unsignedf = true;
-        break;
-    default:
-        OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+    long long result;
+    unsigned n = op >> 5, sign_bit = 0;
+    if (n == 7) {
+	n = 8;
+	result = 0;
+	unsignedf = true;
+    } else {
+	result = op & ((1 << initial_bits) - 1);
+        sign_bit = initial_bits + (n << 3) - 1;
     }
     for (++th->pc; n > 0; --n, ++th->pc) {
         result = (result << 8) | *th->pc;
     }
     if (!unsignedf) {
-        long long m = 1 << sign_bit;
-        if ((result & m) != 0) {
-            result |= ~(m - 1);
-        }        
+        long long m = 1LL << sign_bit;
+        if ((result & m) != 0)  result |= ~(m - 1);
     }
 
     return (result);
 }
 
-static long long interp_intval(ovm_thread_t th)
+static inline long long interp_intval(ovm_thread_t th)
 {
     return (_interp_intval(th, 5, false));
 }
 
-static unsigned long long interp_uintval(ovm_thread_t th)
+static inline unsigned long long interp_uintval(ovm_thread_t th)
 {
     return ((unsigned long long) _interp_intval(th, 5, true));
 }
@@ -7499,11 +7481,11 @@ CM_DECL(atput)
 
 CM_DECL(new)
 {
-    CM_ARGC_CHK(4);
-    ovm_obj_ns_t ns = ovm_inst_nsval(th, &argv[1]);
-    ovm_obj_str_t nm = ovm_inst_strval(th, &argv[2]);
-    ovm_obj_class_t parent = ovm_inst_classval(th, &argv[3]);
-    str_inst_hash(&argv[2]);
+    if (argc < 3 || argc > 4)  ovm_except_num_args_range(th, 3, 4);
+    ovm_obj_str_t nm = ovm_inst_strval(th, &argv[1]);
+    ovm_obj_class_t parent = ovm_inst_classval(th, &argv[2]);
+    ovm_obj_ns_t ns = (argc == 4) ? ovm_inst_nsval(th, &argv[3]) : ns_up(th, 1);
+    str_inst_hash(&argv[1]);
     ovm_stack_push_obj(th, ns->base);
     ovm_stack_push_obj(th, parent->base);
     ovm_user_class_new(th, nm->size, nm->data, argv[2].hash);

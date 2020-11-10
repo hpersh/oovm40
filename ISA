@@ -7,10 +7,14 @@
 21 (3)  : 0 1 0 n n n n n . n n n n n n n n . n n n n n n n n
 29 (4)  : 0 1 1 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 37 (5)  : 1 0 0 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-64 (9)  : 1 0 1 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-80 (11) : 1 1 0 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+45 (6)  : 1 0 1 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+53 (7)  : 1 1 0 n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+64 (9)  : 1 1 1 x x x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 
 nnn..n is big-endian
+
+* float
+80 (10) : n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 
 * str
 
@@ -18,12 +22,14 @@ len+data (data is null-terminated)
 
 * base+ofs (signed)
 
- 3 (1) : 0 0 0 b b n n n
-11 (2) : 0 0 1 b b n n n . n n n n n n n n
-19 (3) : 0 1 0 b b n n n . n n n n n n n n . n n n n n n n n
-27 (4) : 0 1 1 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-35 (5) : 1 0 0 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-64 (9) : 1 0 1 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+ 3 (1)  : 0 0 0 b b n n n
+11 (2)  : 0 0 1 b b n n n . n n n n n n n n
+19 (3)  : 0 1 0 b b n n n . n n n n n n n n . n n n n n n n n
+27 (4)  : 0 1 1 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+35 (5)  : 1 0 0 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+43 (6)  : 1 0 1 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+51 (7)  : 1 1 0 b b n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
+64 (9)  : 1 1 1 b b x x x . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
 
 bb
 00 sp
@@ -53,7 +59,7 @@ nnn..n is big-endian
 
 07     ret
 
-08     retd
+08     retd		# Return default, assign &argv[0] to dst and return
 
 09     except_push	var:base+ofs
 
@@ -93,9 +99,9 @@ nnn..n is big-endian
 
 1d     int_pushc	val:val
 
-1e     float_newc	dst:base+ofs val:floatval
+1e     float_newc	dst:base+ofs val:float
 
-1f     float_pushc	val:floatval
+1f     float_pushc	val:float
 
 20     method_newc	dst:base+ofs addr:ofs
 
