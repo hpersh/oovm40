@@ -20,7 +20,7 @@ OVMS = lib test2 perf2 http thread_test regexp_test socket_test process_test dns
 all: oovm_hash .libs/liboovm.so oovm ovmc1 $(foreach f,$(CLIBS) $(OVMS),.libs/liboovm$(f).so)
 
 clean:
-	rm -fr $(BINS) $(foreach f,$(BINS),$(f).exe) *.so *.o grammar.tab.* lex.yy.* oovm_ovm*.c oovm.s $(foreach f,$(CLIBS),$(f)_ovm*.c) $(foreach f,$(CLIBS),$(f).s) $(foreach f,$(OVMS),$(f)*.xml $(f)*.[cs]) gmon.out *.la *.lo .libs
+	rm -fr $(BINS) $(foreach f,$(BINS),$(f).exe) *.so *.o grammar.tab.* lex.yy.* oovm_ovm*.c oovm.s $(foreach f,$(CLIBS),$(f)_ovm*.c $(f).s) $(foreach f,$(OVMS),$(f)*.xml $(f)*.[cs]) gmon.out *.la *.lo .libs
 
 .PRECIOUS: %.c
 
@@ -35,7 +35,7 @@ ovmc1: scanner.l grammar.y ovmc1.cc ovmc.h
 oovm: oovm_main.c $(OOVM_INCLUDES)
 	$(CC) $(CFLAGS) oovm_main.c -rdynamic -o oovm -L.libs -loovm -lz -lpthread -ldl
 
-oovm_hash: oovm_hash.c
+oovm_hash: oovm_hash.c oovm_hash.h
 	$(CC) $(CFLAGS) oovm_hash.c -o oovm_hash -lz
 
 .libs/liboovm.so: oovm.c  $(OOVM_INCLUDES)

@@ -13,9 +13,6 @@
 
 nnn..n is big-endian
 
-* float
-80 (10) : n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n . n n n n n n n n
-
 * str
 
 len+data (data is null-terminated)
@@ -55,7 +52,7 @@ nnn..n is big-endian
 
 05     stack_push	src:base+ofs
 
-06     method_callc	dst:base+ofs sel:str selhash:uint32 argc:len
+06     method_callc	dst:base+ofs sel:str sel_hash:uint32 argc:len
 
 07     ret
 
@@ -83,9 +80,9 @@ nnn..n is big-endian
 
 13     iff		ofs:ofs
 
-14     env_atc  	dst:base+ofs name:str
+14     env_atc  	dst:base+ofs name:str name_hash:uint32
 
-15     env_atc_push	name:str
+15     env_atc_push	name:str name_hash:uint32
 
 16     nil_new		dst:base+ofs
 
@@ -99,22 +96,22 @@ nnn..n is big-endian
 
 1d     int_pushc	val:val
 
-1e     float_newc	dst:base+ofs val:float
+1e     float_newc	dst:base+ofs val:str
 
-1f     float_pushc	val:float
+1f     float_pushc	val:str
 
 20     method_newc	dst:base+ofs addr:ofs
 
 21     method_pushc	addr:ofs
 
-22     cmethod_newc	dst:base+ofs addr:ofs
+22     str_newc		dst:base+ofs str:str
 
-23     cmethod_pushc	addr:ofs
+23     str_pushc	str:str
 
-24     str_newc		dst:base+ofs str:str
+24     str_newc_hash	dst:base+ofs str:str str_hash:uint32
 
-25     str_pushc	str:str
+25     str_pushc_hash	str:str str_hash:uint32
 
-26     str_newc_hash	dst:base+ofs str:str hash
+26     argc_chk		n:uval
 
-27     str_pushc_hash	str:str
+27     array_arg_push	min:uval

@@ -9,7 +9,7 @@ int main(int argc, char **argv)
   if (argc != 2)  abort();
 
   char *s = argv[1];
-  printf("%u", mem_hash(strlen(s) + 1, s));
+  printf("%u", mem_hash(strlen(s), s));
 
   return (0);
 }

@@ -2192,14 +2192,14 @@ static ovm_obj_set_t user_new_unsafe(ovm_thread_t th, ovm_inst_t dst, ovm_obj_cl
 
 /* Assorted helper fucntions, for implementing methods */
 
-ovm_intval_t ovm_str_hashc(unsigned size, const char *data)
+static ovm_intval_t str_hashc(unsigned size, const char *data)
 {
-    return (mem_hash(size, data));
+    return (mem_hash(size - 1, data));
 }
 
 static inline ovm_intval_t str_hash(ovm_obj_str_t s)
 {
-    return (ovm_str_hashc(s->size, s->data));
+    return (str_hashc(s->size, s->data));
 }
 
 static ovm_intval_t str_inst_hash(ovm_inst_t inst)
@@ -2698,19 +2698,22 @@ static inline unsigned long long interp_uintval(ovm_thread_t th)
     return ((unsigned long long) _interp_intval(th, 5, true));
 }
 
-static ovm_floatval_t interp_floatval(ovm_thread_t th)
-{
-    ovm_floatval_t result = *(ovm_floatval_t *) th->pc;
-    th->pc += sizeof(result);
-    return (result);
-}
-
 static void interp_strval(ovm_thread_t th, unsigned *size, const char **data)
 {
     unsigned long long _size = interp_uintval(th);
     *size = _size;
     *data = (const char *) th->pc;
     th->pc += _size;
+}
+
+static ovm_floatval_t interp_floatval(ovm_thread_t th)
+{
+    unsigned size;
+    const char *data;
+    interp_strval(th, &size, &data);
+    long double result;
+    sscanf(data, "%La", &result);
+    return (result);
 }
 
 static ovm_inst_t interp_base_ofs(ovm_thread_t th)
@@ -2747,6 +2750,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
 {
     unsigned char *old = th->pc;
     th->pc = m;
+    struct ovm_frame_mc *mcfp = thread_mcfp(th);
     for (;;) {
         unsigned char op = *th->pc++;
         switch (op) {
@@ -2869,7 +2873,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_environ_atc(th, dst, size, data, interp_uintval(th));
+                ovm_environ_atc(th, dst, size, data, interp_uint32(th));
             }
             break;
             
@@ -2878,7 +2882,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_environ_atc_push(th, size, data, interp_uintval(th));
+                ovm_environ_atc_push(th, size, data, interp_uint32(th));
             }
             break;
 
@@ -2925,26 +2929,19 @@ static void interp(ovm_thread_t th, ovm_method_t m)
         case 0x20:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
-                ovm_method_newc(dst, (ovm_method_t)(intptr_t) interp_uintval(th));
+		long long ofs = interp_intval(th);
+                ovm_method_newc(dst, (ovm_method_t)(th->pc + ofs));
             }
             break;
 
         case 0x21:
-            ovm_method_pushc(th, (ovm_method_t)(intptr_t) interp_uintval(th));
+	    {
+		long long ofs = interp_intval(th);
+		ovm_method_pushc(th, (ovm_method_t)(th->pc + ofs));
+	    }
             break;
 
         case 0x22:
-            {
-                ovm_inst_t dst = interp_base_ofs(th);
-                ovm_codemethod_newc(dst, (ovm_codemethod_t)(intptr_t) interp_uintval(th));
-            }
-            break;
-
-        case 0x23:
-            ovm_codemethod_pushc(th, (ovm_codemethod_t)(intptr_t) interp_uintval(th));
-            break;
-
-        case 0x24:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned size;
@@ -2954,7 +2951,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             }
             break;
             
-        case 0x25:
+        case 0x23:
             {
                 unsigned size;
                 const char *data;
@@ -2963,7 +2960,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             }
             break;
             
-        case 0x26:
+        case 0x24:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned size;
@@ -2973,7 +2970,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             }
             break;
             
-        case 0x27:
+        case 0x25:
             {
                 unsigned size;
                 const char *data;
@@ -2982,6 +2979,19 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             }
             break;
 
+	case 0x26:
+	    {
+		unsigned expected = interp_uintval(th);
+		if (mcfp->argc != expected) {
+		    ovm_except_num_args(th, expected);
+		}
+	    }
+	    break;
+
+	case 0x27:
+	    ovm_method_array_arg_push(th, interp_uintval(th));
+	    break;
+	    
         default:
             OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
         }
@@ -3450,7 +3460,7 @@ static bool parse_object(ovm_thread_t th, ovm_inst_t dst, unsigned size, const c
     ovm_inst_t work = ovm_stack_alloc(th, 2);
 
     if (parse_dict(th, &work[-2], size - ofs_dict, data + ofs_dict)) {
-        ovm_environ_atc(th, &work[-1], ofs_at, data, ovm_str_hashc(ofs_at, data));
+        ovm_environ_atc(th, &work[-1], ofs_at, data, str_hashc(ofs_at, data));
         ovm_method_callsch(th, dst, OVM_STR_CONST_HASH(new), 2);
         result = true;
     }
@@ -6899,16 +6909,15 @@ static void module_mutex_init(void)
   pthread_mutex_init(module_mutex, module_mutex_attr);
 }
 
-static ovm_obj_module_t module_new_and_init(ovm_thread_t th, ovm_inst_t dst, ovm_obj_str_t modname, unsigned modname_hash, ovm_obj_str_t filename, ovm_obj_str_t sha1, void *dlhdl, ovm_obj_ns_t parent, ovm_codemethod_t init_func, ovm_obj_set_t modules_loaded)
+static ovm_obj_module_t module_new_and_init(ovm_thread_t th, ovm_inst_t dst, ovm_obj_str_t modname, unsigned modname_hash, ovm_obj_str_t filename, ovm_obj_str_t sha1, void *dlhdl, ovm_obj_ns_t parent, ovm_inst_t init_func, ovm_obj_set_t modules_loaded)
 {
     ovm_obj_module_t m = module_new(th, dst, modname, modname_hash, filename, sha1, dlhdl, parent);
 
-    ovm_inst_t work = ovm_stack_alloc(th, 2);
+    ovm_inst_t work = ovm_stack_alloc(th, 1);
 
-    ovm_codemethod_newc(&work[-1], init_func);
-    ovm_inst_assign(&th->sp[0], dst);
+    ovm_inst_assign(&work[-1], dst);
 
-    method_run(th, &th->sp[0], ovm_inst_nsval_nochk(dst), 0, &work[-1], 1, &th->sp[0]);
+    method_run(th, &work[-1], ovm_inst_nsval_nochk(dst), 0, init_func, 1, &th->sp[0]);
     
     ovm_stack_unwind(th, work);
     
@@ -6975,10 +6984,22 @@ static bool module_load_unsafe(ovm_thread_t th, ovm_inst_t dst, ovm_obj_str_t mo
                 snprintf(mesg, mesg_bufsize, "load failed, %s", dlerror());
                 break;
             }
-            ovm_codemethod_t init_func = (ovm_codemethod_t) module_func(dlhdl, modname, "init", mesg_bufsize, mesg);
-            if (init_func == 0)  break;
-            
-            module_new_and_init(th, dst, modname, modname_hash, filename, sha1, dlhdl, parent, init_func, modules_loaded);      
+	    
+	    void *init_func = 0;
+	    do {
+		init_func = module_func(dlhdl, modname, "code", mesg_bufsize, mesg);
+		if (init_func != 0) {
+		    ovm_method_newc(&work[-2], (ovm_method_t) init_func);
+		    break;
+		}
+		init_func = module_func(dlhdl, modname, "init", mesg_bufsize, mesg);
+		if (init_func != 0) {
+		    ovm_codemethod_newc(&work[-2], (ovm_codemethod_t) init_func);
+		    break;
+		}
+	    } while (0);
+	    if (init_func == 0)  break;
+            module_new_and_init(th, dst, modname, modname_hash, filename, sha1, dlhdl, parent, &work[-2], modules_loaded);      
             
             result = true;
         } while (0);
@@ -8468,7 +8489,7 @@ static void classes_init(ovm_thread_t th)
   
     for (i = 0; i < ARRAY_SIZE(method_init_tbl); ++i) {
         ovm_codemethod_newc(&work[-3], method_init_tbl[i].func);
-        dict_ats_put(th, cl_dict(ovm_obj_class(*method_init_tbl[i].cl), method_init_tbl[i].dict_ofs), method_init_tbl[i].sel->size, method_init_tbl[i].sel->data, ovm_str_hashc(method_init_tbl[i].sel->size, method_init_tbl[i].sel->data), &work[-3]);
+        dict_ats_put(th, cl_dict(ovm_obj_class(*method_init_tbl[i].cl), method_init_tbl[i].dict_ofs), method_init_tbl[i].sel->size, method_init_tbl[i].sel->data, str_hashc(method_init_tbl[i].sel->size, method_init_tbl[i].sel->data), &work[-3]);
     }
 
     /* Pass 4: Create main namespace */
@@ -8476,7 +8497,7 @@ static void classes_init(ovm_thread_t th)
     ovm_obj_set_t main_dict = set_newc(&work[-4], OVM_CL_DICTIONARY, 64);
     ovm_obj_str_t s = str_newc(&work[-3], OVM_STR_CONST(main));
     ovm_obj_ns_t ns = ns_new(th, &work[-2], s, str_inst_hash(&work[-3]), main_dict, 0);
-    dict_ats_put(th, main_dict, s->size, s->data, ovm_str_hashc(s->size, s->data), &work[-2]);
+    dict_ats_put(th, main_dict, s->size, s->data, str_hashc(s->size, s->data), &work[-2]);
     _ovm_obj_assign_nolock_norelease(&ns_main, ns->base);
   
     /* Pass 5: Assign all classes to main module */
@@ -8484,7 +8505,7 @@ static void classes_init(ovm_thread_t th)
     for (i = 0; i < ARRAY_SIZE(cl_init_tbl); ++i) {
         _ovm_obj_assign_nolock_norelease(&ovm_obj_class(*cl_init_tbl[i].dst)->ns, ns_main);
         _ovm_inst_assign_obj_nolock(&work[-1], (*cl_init_tbl[i].dst));
-        dict_ats_put(th, main_dict, cl_init_tbl[i].name->size, cl_init_tbl[i].name->data, ovm_str_hashc(cl_init_tbl[i].name->size, cl_init_tbl[i].name->data), &work[-1]);
+        dict_ats_put(th, main_dict, cl_init_tbl[i].name->size, cl_init_tbl[i].name->data, str_hashc(cl_init_tbl[i].name->size, cl_init_tbl[i].name->data), &work[-1]);
     }
 
     /* Pass 6: Run class init hooks */
@@ -8574,7 +8595,7 @@ int ovm_run(ovm_thread_t th, ovm_inst_t dst, char *entry_module, char *entry_cl,
     }
     ovm_inst_assign(&work[-5], ovm_inst_pairval_nochk(&work[-5])->second);
     if (ovm_inst_of_raw(&work[-5]) != OVM_METACLASS)  goto no_entry_cl;
-    if (!dict_ats(&work[-6], ovm_obj_set(ovm_inst_classval_nochk(&work[-5])->cl_methods), strlen(entry_method) + 1, entry_method, ovm_str_hashc(strlen(entry_method) + 1, entry_method))) {
+    if (!dict_ats(&work[-6], ovm_obj_set(ovm_inst_classval_nochk(&work[-5])->cl_methods), strlen(entry_method) + 1, entry_method, str_hashc(strlen(entry_method) + 1, entry_method))) {
     method_not_found:
         fprintf(stderr, "Error: entry method %s not found\n", entry_method);
         return (-6);

@@ -10,7 +10,7 @@ extern "C" {
 static inline unsigned
 mem_hash(unsigned size, const void *data)
 {
-  return (crc32(-1, (unsigned char *) data, size));
+  return (crc32(0, (unsigned char *) data, size));
 }
 
 #ifdef __cplusplus

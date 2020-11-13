@@ -80,15 +80,6 @@ def gen_str_newch(outf, nd):
 def gen_str_pushch(outf, nd):
     outf.write('ovm_str_pushch(th, _OVM_STR_CONST_HASH("{}"));\n'.format(nd.get('val')))
 
-def gen_list_cons(outf, nd):
-    outf.write('ovm_list_cons(th, {}, {}, {});\n'.format(gen_src_dst(nd.get('dst')), gen_src_dst(nd.get('item')), gen_src_dst(nd.get('list'))))
-
-def gen_list_cons1(outf, nd):
-    outf.write('ovm_list_cons1(th, {}, {});\n'.format(gen_src_dst(nd.get('dst')), gen_src_dst(nd.get('item'))))
-
-def gen_list_reverse(outf, nd):
-    outf.write('ovm_list_reverse(th, {}, {});\n'.format(gen_src_dst(nd.get('dst')), gen_src_dst(nd.get('src'))))
-    
 def gen_label(outf, nd):
     outf.write('{}: ;\n'.format(nd.get('name')))
     
@@ -113,9 +104,6 @@ def gen_environ_at(outf, nd):
 def gen_environ_at_push(outf, nd):
     outf.write('ovm_environ_atc_push(th, _OVM_STR_CONST_HASH("{}"));\n'.format(nd.get('name')))
 
-def gen_environ_atput(outf, nd):
-    outf.write('ovm_environ_atcput(th, _OVM_STR_CONST_HASH("{}"), {});\n'.format(nd.get('name'), gen_src_dst(nd.get('src'))))
-
 def gen_except_push(outf, nd):
     outf.write('setjmp(ovm_frame_except_push(th, {}));\n'.format(gen_src_dst(nd.get('var'))))
 
@@ -132,6 +120,10 @@ def gen_except_reraise(outf, nd):
     outf.write('ovm_except_reraise(th);\n')
 
 def gen_ret(outf, nd):
+    outf.write('return;\n')
+
+def gen_retd(outf, nd):
+    outf.write('ovm_inst_assign(dst, &argv[0]);\n')
     outf.write('return;\n')
 
 def gen_class_add(outf, nd):
@@ -159,6 +151,7 @@ def process_file(infile):
     for f in r:
         global bp_used
         bp_used = False
+        # Scan for bp used
         with open('/dev/null', 'r+') as outf_null:
             for s in f:
                 gen_node(outf_null, s)
