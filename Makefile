@@ -13,7 +13,8 @@ CHK	= splint
 
 BINS = oovm oovm_hash ovmc1 
 CLIBS = math thread regexp socket process dns datetime
-OVMS = lib test2 perf2 http thread_test regexp_test socket_test process_test dns_test datetime_test math_test xml ctype
+#OVMS = test2 perf2 http thread_test regexp_test socket_test process_test dns_test datetime_test math_test xml ctype
+OVMS =	
 
 .PHONY: all clean check doc uninstall builddeps
 

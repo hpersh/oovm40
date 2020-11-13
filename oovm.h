@@ -1391,24 +1391,6 @@ static inline void ovm_float_pushc(ovm_thread_t th, ovm_floatval_t val)
     th->sp = p;
 }
 
-static inline void ovm_method_newc(ovm_inst_t dst, ovm_method_t m)
-{
-    _ovm_objs_lock();
-
-    ovm_inst_release(dst);
-    OVM_INST_INIT(dst, OVM_INST_TYPE_METHOD, methodval, m);
-
-    _ovm_objs_unlock();
-}
-
-static inline void ovm_method_pushc(ovm_thread_t th, ovm_method_t m)
-{
-    ovm_inst_t p = _ovm_stack_alloc(th, 1);
-    OVM_INST_INIT(p, OVM_INST_TYPE_METHOD, methodval, m);
-
-    th->sp = p;
-}
-
 static inline void ovm_codemethod_newc(ovm_inst_t dst, ovm_codemethod_t m)
 {
     _ovm_objs_lock();
@@ -1507,24 +1489,6 @@ void ovm_file_newc(ovm_thread_t th, ovm_inst_t dst, unsigned name_size, const ch
 void ovm_class_new(ovm_thread_t th, unsigned name_size, const char *name, unsigned name_hash, void (*mark)(ovm_obj_t obj), void (*free)(ovm_obj_t obj), void (*cleanup)(ovm_obj_t obj));
 
 /**
- * \brief Create a user class
- *
- * Create a new class, which will create user-type instances.
- * When called, expects that the stack will have the parent class for the new class at the top, followed by the namespace in which the class will be created.
- * When completed, the stack will have the new class at the top, followed by the namespace.
- * 
- * \param[in] th Thread
- * \param[in] name_size Size of class name string
- * \param[in] name Name of new class
- * \param[in] name_hash Hash value for class name string
- * 
- * \return Nothing
- *
- * \except system.invalid-value Invalid argument value
- */
-void ovm_user_class_new(ovm_thread_t th, unsigned name_size, const char *name, unsigned name_hash);
-
-/**
  * \brief Add a class method to a class
  *
  * Add the given function as a class method to the given class.
@@ -1535,14 +1499,13 @@ void ovm_user_class_new(ovm_thread_t th, unsigned name_size, const char *name, u
  * \param[in] sel_size Size of selector string
  * \param[in] sel Selector
  * \param[in] sel_hash Hash value for selector string
- * \param[in] type One of OVM_INST_TYPE_CODEMETHOD or OVM_INST_TYPE_METHOD
  * \param[in] func Method function
  * 
  * \return Nothing
  *
  * \except system.invalid-value Invalid argument value
  */
-void ovm_classmethod_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, unsigned type, void *func);
+void ovm_classmethod_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, void *func);
 
 /**
  * \brief Add an instance method to a class
@@ -1555,14 +1518,13 @@ void ovm_classmethod_add(ovm_thread_t th, unsigned sel_size, const char *sel, un
  * \param[in] sel_size Size of selector string
  * \param[in] sel Selector
  * \param[in] sel_hash Hash value for selector string
- * \param[in] type One of OVM_INST_TYPE_CODEMETHOD or OVM_INST_TYPE_METHOD
  * \param[in] func Method function
  * 
  * \return Nothing
  *
  * \except system.invalid-value Invalid argument value
  */
-void ovm_method_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, unsigned type, void *func);
+void ovm_method_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, void *func);
 
 /**
  * \brief Delete a class method from a class

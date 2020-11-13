@@ -84,18 +84,18 @@ void __math_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t ar
 
   ovm_stack_push_obj(th, ovm_consts.Float);
 
-  ovm_method_add(th, OVM_STR_CONST_HASH(acos),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(acos));
-  ovm_method_add(th, OVM_STR_CONST_HASH(asin),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(asin));
-  ovm_method_add(th, OVM_STR_CONST_HASH(atan),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(atan));
-  ovm_method_add(th, OVM_STR_CONST_HASH(atan2), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(atan2));
-  ovm_method_add(th, OVM_STR_CONST_HASH(cos),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(cos));
-  ovm_method_add(th, OVM_STR_CONST_HASH(sin),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(sin));
-  ovm_method_add(th, OVM_STR_CONST_HASH(tan),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(tan));
-  ovm_method_add(th, OVM_STR_CONST_HASH(exp),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(exp));
-  ovm_method_add(th, OVM_STR_CONST_HASH(exp10), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(exp10));
-  ovm_method_add(th, OVM_STR_CONST_HASH(log),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(log));
-  ovm_method_add(th, OVM_STR_CONST_HASH(log10), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(log10));
-  ovm_method_add(th, OVM_STR_CONST_HASH(sqrt),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(sqrt));
+  ovm_method_add(th, OVM_STR_CONST_HASH(acos),  METHOD_NAME(acos));
+  ovm_method_add(th, OVM_STR_CONST_HASH(asin),  METHOD_NAME(asin));
+  ovm_method_add(th, OVM_STR_CONST_HASH(atan),  METHOD_NAME(atan));
+  ovm_method_add(th, OVM_STR_CONST_HASH(atan2), METHOD_NAME(atan2));
+  ovm_method_add(th, OVM_STR_CONST_HASH(cos),   METHOD_NAME(cos));
+  ovm_method_add(th, OVM_STR_CONST_HASH(sin),   METHOD_NAME(sin));
+  ovm_method_add(th, OVM_STR_CONST_HASH(tan),   METHOD_NAME(tan));
+  ovm_method_add(th, OVM_STR_CONST_HASH(exp),   METHOD_NAME(exp));
+  ovm_method_add(th, OVM_STR_CONST_HASH(exp10), METHOD_NAME(exp10));
+  ovm_method_add(th, OVM_STR_CONST_HASH(log),   METHOD_NAME(log));
+  ovm_method_add(th, OVM_STR_CONST_HASH(log10), METHOD_NAME(log10));
+  ovm_method_add(th, OVM_STR_CONST_HASH(sqrt),  METHOD_NAME(sqrt));
 
   ovm_stack_alloc(th, 2);
   ovm_inst_t w = th->sp;

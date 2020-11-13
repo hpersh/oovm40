@@ -2160,20 +2160,6 @@ static void user_cl_alloc(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_in
     ovm_stack_unwind(th, work);
 }
 
-/* ns parent -- ns cl */
-
-void ovm_user_class_new(ovm_thread_t th, unsigned name_size, const char *name, unsigned name_hash)
-{
-    ovm_obj_class_t cl = class_new(th, th->sp, ovm_inst_nsval(th, &th->sp[1]), name_size, name, name_hash, ovm_inst_classval(th, th->sp), set_mark, set_free, 0);
-
-    ovm_inst_t work = ovm_stack_alloc(th, 1);
-
-    ovm_codemethod_newc(&work[-1], user_cl_alloc);
-    dict_ats_put(th, ovm_obj_set(cl->cl_methods), _OVM_STR_CONST_HASH("__alloc__"), &work[-1]);
-
-    ovm_stack_unwind(th, work);
-}
-
 static ovm_obj_set_t user_new_unsafe(ovm_thread_t th, ovm_inst_t dst, ovm_obj_class_t cl)
 {
     ovm_obj_set_t result = set_newc(dst, OVM_CL_USER, 16);
@@ -2746,6 +2732,24 @@ static ovm_inst_t interp_base_ofs(ovm_thread_t th)
     return (result);
 }
 
+static inline void method_newc(ovm_inst_t dst, ovm_method_t m)
+{
+    _ovm_objs_lock();
+
+    ovm_inst_release(dst);
+    OVM_INST_INIT(dst, OVM_INST_TYPE_METHOD, methodval, m);
+
+    _ovm_objs_unlock();
+}
+
+static inline void method_pushc(ovm_thread_t th, ovm_method_t m)
+{
+    ovm_inst_t p = _ovm_stack_alloc(th, 1);
+    OVM_INST_INIT(p, OVM_INST_TYPE_METHOD, methodval, m);
+
+    th->sp = p;
+}
+
 static void interp(ovm_thread_t th, ovm_method_t m)
 {
     unsigned char *old = th->pc;
@@ -2930,14 +2934,14 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             {
                 ovm_inst_t dst = interp_base_ofs(th);
 		long long ofs = interp_intval(th);
-                ovm_method_newc(dst, (ovm_method_t)(th->pc + ofs));
+                method_newc(dst, (ovm_method_t)(th->pc + ofs));
             }
             break;
 
         case 0x21:
 	    {
 		long long ofs = interp_intval(th);
-		ovm_method_pushc(th, (ovm_method_t)(th->pc + ofs));
+		method_pushc(th, (ovm_method_t)(th->pc + ofs));
 	    }
             break;
 
@@ -6989,7 +6993,7 @@ static bool module_load_unsafe(ovm_thread_t th, ovm_inst_t dst, ovm_obj_str_t mo
 	    do {
 		init_func = module_func(dlhdl, modname, "code", mesg_bufsize, mesg);
 		if (init_func != 0) {
-		    ovm_method_newc(&work[-2], (ovm_method_t) init_func);
+		    method_newc(&work[-2], (ovm_method_t) init_func);
 		    break;
 		}
 		init_func = module_func(dlhdl, modname, "init", mesg_bufsize, mesg);
@@ -7507,10 +7511,14 @@ CM_DECL(new)
     ovm_obj_class_t parent = ovm_inst_classval(th, &argv[2]);
     ovm_obj_ns_t ns = (argc == 4) ? ovm_inst_nsval(th, &argv[3]) : ns_up(th, 1);
     str_inst_hash(&argv[1]);
-    ovm_stack_push_obj(th, ns->base);
-    ovm_stack_push_obj(th, parent->base);
-    ovm_user_class_new(th, nm->size, nm->data, argv[2].hash);
-    ovm_inst_assign(dst, th->sp);
+
+    ovm_inst_t work = ovm_stack_alloc(th, 2);
+
+    ovm_obj_class_t cl = class_new(th, &work[-1], ns, nm->size, nm->data, argv[1].hash, parent, set_mark, set_free, 0);
+    ovm_codemethod_newc(&work[-2], user_cl_alloc);
+    dict_ats_put(th, ovm_obj_set(cl->cl_methods), _OVM_STR_CONST_HASH("__alloc__"), &work[-2]);
+
+    ovm_inst_assign(dst, &work[-1]);
 }
 
 CM_DECL(at)
@@ -7644,21 +7652,11 @@ CM_DECL(write)
     ovm_inst_assign(dst, &work[-1]);
 }
 
-static void _method_add(ovm_thread_t th, ovm_obj_set_t dict, unsigned sel_size, const char *sel, unsigned sel_hash, unsigned type, void *func)
+static void _method_add(ovm_thread_t th, ovm_obj_set_t dict, unsigned sel_size, const char *sel, unsigned sel_hash, void *func)
 {
     ovm_inst_t work = ovm_stack_alloc(th, 1);
 
-    switch (type) {
-    case OVM_INST_TYPE_CODEMETHOD:
-        ovm_codemethod_newc(&work[-1], (ovm_codemethod_t) func);
-        break;
-    case OVM_INST_TYPE_METHOD:
-        ovm_method_newc(&work[-1], (ovm_method_t) func);
-        break;
-    default:
-        abort();
-    }
-
+    ovm_codemethod_newc(&work[-1], (ovm_codemethod_t) func);
     dict_ats_put(th, dict, sel_size, sel, sel_hash, &work[-1]);
     
     ovm_stack_unwind(th, work);
@@ -7666,16 +7664,16 @@ static void _method_add(ovm_thread_t th, ovm_obj_set_t dict, unsigned sel_size, 
 
 /* cl -- cl */
 
-void ovm_classmethod_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, unsigned type, void *func)
+void ovm_classmethod_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, void *func)
 {
-    _method_add(th, ovm_obj_set(ovm_inst_classval(th, th->sp)->cl_methods), sel_size, sel, sel_hash, type, func);
+    _method_add(th, ovm_obj_set(ovm_inst_classval(th, th->sp)->cl_methods), sel_size, sel, sel_hash, func);
 }
 
 /* cl -- cl */
 
-void ovm_method_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, unsigned type, void *func)
+void ovm_method_add(ovm_thread_t th, unsigned sel_size, const char *sel, unsigned sel_hash, void *func)
 {
-    _method_add(th, ovm_obj_set(ovm_inst_classval(th, th->sp)->inst_methods), sel_size, sel, sel_hash, type, func);
+    _method_add(th, ovm_obj_set(ovm_inst_classval(th, th->sp)->inst_methods), sel_size, sel, sel_hash, func);
 }
 
 void ovm_classmethod_del(ovm_obj_class_t cl, unsigned sel_size, const char *sel, unsigned sel_hash)

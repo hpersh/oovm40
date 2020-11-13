@@ -248,7 +248,7 @@ void __datetime_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_
 #undef  METHOD_CLASS
 #define METHOD_CLASS  Delay
   
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(sleep), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(sleep));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(sleep), METHOD_NAME(sleep));
 
     ovm_stack_free(th, 1);
   
@@ -258,22 +258,26 @@ void __datetime_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_
 #undef  METHOD_CLASS
 #define METHOD_CLASS  Datetime
   
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(time),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(time));
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(ctime), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(ctime));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(time),  METHOD_NAME(time));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(ctime), METHOD_NAME(ctime));
 
     ovm_stack_free(th, 1);
 
-    ovm_stack_push_obj(th, ovm_consts.Object);
-    ovm_user_class_new(th, OVM_STR_CONST_HASH(Tm));
+    ovm_stack_alloc(th, 4);
+    ovm_inst_assign_obj(&th->sp[0], ovm_consts.Metaclass);
+    ovm_str_newch(&th->sp[1], OVM_STR_CONST_HASH(Tm));
+    ovm_inst_assign_obj(&th->sp[2], ovm_consts.Object);
+    ovm_method_callsch(th, &th->sp[3], OVM_STR_CONST_HASH(new), 3);
+    ovm_stack_free(th, 3);
 
 #undef  METHOD_CLASS
 #define METHOD_CLASS  Tm
   
-    ovm_method_add(th, _OVM_STR_CONST_HASH("__init__"), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(init));
-    ovm_method_add(th, OVM_STR_CONST_HASH(mktime),      OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(mktime));
-    ovm_method_add(th, OVM_STR_CONST_HASH(cmp),         OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(cmp));
-    ovm_method_add(th, OVM_STR_CONST_HASH(String),      OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
-    ovm_method_add(th, OVM_STR_CONST_HASH(write),       OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
+    ovm_method_add(th, _OVM_STR_CONST_HASH("__init__"), METHOD_NAME(init));
+    ovm_method_add(th, OVM_STR_CONST_HASH(mktime),      METHOD_NAME(mktime));
+    ovm_method_add(th, OVM_STR_CONST_HASH(cmp),         METHOD_NAME(cmp));
+    ovm_method_add(th, OVM_STR_CONST_HASH(String),      METHOD_NAME(write));
+    ovm_method_add(th, OVM_STR_CONST_HASH(write),       METHOD_NAME(write));
 
     ovm_stack_unwind(th, old);
 }

@@ -1055,13 +1055,12 @@ def parse_class(outf, dst, nd):
         clinfo = class_scan(nd)
         for c in nd[2]:
             class_implements_iface(nd, clinfo, c.get('val'))
-    gen_stack_alloc(init, 5)
+    gen_stack_alloc(init, 4)
     gen_environ_at(init, 'sp[0]', '#Metaclass')
     gen_str_newch(init, 'sp[1]', nm)
     parse_node(init, 'sp[2]', nd[1])
-    gen_inst_assign(init, 'sp[3]', 'ap[0]')
-    gen_method_call(init, 'sp[4]', 'new', 4)
-    gen_stack_free(init, 4)
+    gen_method_call(init, 'sp[3]', 'new', 3)
+    gen_stack_free(init, 3)
     fr = class_push(nd)
     for c in nd[3]:
         parse_node(outf, dst, c)
@@ -1095,10 +1094,10 @@ def parse_node(outf, dst, nd):
 def process_file(infile):
     parse_node(body, None, et.parse(open(infile)).getroot())
     r = et.Element('module', attrib={'name': modname})
+    r.append(init)
     for x in [anon, body]:
         for c in x:
             r.append(c)
-    r.append(init)
     et.ElementTree(r).write(sys.stdout)
 
 def main():

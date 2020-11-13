@@ -409,16 +409,16 @@ void __socket_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t 
 
     ovm_stack_unwind(th, work);
     
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(new));
-    ovm_method_add(th, _OVM_STR_CONST_HASH("errno"), OVM_INST_TYPE_CODEMETHOD, socket$Socket$errno);
-    ovm_method_add(th, OVM_STR_CONST_HASH(bind),     OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(bind));
-    ovm_method_add(th, OVM_STR_CONST_HASH(connect),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(connect));
-    ovm_method_add(th, OVM_STR_CONST_HASH(listen),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(listen));
-    ovm_method_add(th, OVM_STR_CONST_HASH(accept),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(accept));
-    ovm_method_add(th, OVM_STR_CONST_HASH(read),     OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(read));
-    ovm_method_add(th, OVM_STR_CONST_HASH(readln),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(readln));
-    ovm_method_add(th, OVM_STR_CONST_HASH(write),    OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
-    ovm_method_add(th, OVM_STR_CONST_HASH(String),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), METHOD_NAME(new));
+    ovm_method_add(th, _OVM_STR_CONST_HASH("errno"), socket$Socket$errno);
+    ovm_method_add(th, OVM_STR_CONST_HASH(bind),     METHOD_NAME(bind));
+    ovm_method_add(th, OVM_STR_CONST_HASH(connect),  METHOD_NAME(connect));
+    ovm_method_add(th, OVM_STR_CONST_HASH(listen),   METHOD_NAME(listen));
+    ovm_method_add(th, OVM_STR_CONST_HASH(accept),   METHOD_NAME(accept));
+    ovm_method_add(th, OVM_STR_CONST_HASH(read),     METHOD_NAME(read));
+    ovm_method_add(th, OVM_STR_CONST_HASH(readln),   METHOD_NAME(readln));
+    ovm_method_add(th, OVM_STR_CONST_HASH(write),    METHOD_NAME(write));
+    ovm_method_add(th, OVM_STR_CONST_HASH(String),   METHOD_NAME(write));
 
     ovm_stack_unwind(th, old);
 }

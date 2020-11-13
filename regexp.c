@@ -170,9 +170,9 @@ void __regexp_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t 
 
   ovm_stack_unwind(th, work);
 
-  ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(new));
-  ovm_classmethod_add(th, OVM_STR_CONST_HASH(match), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(match1));
-  ovm_method_add(th, OVM_STR_CONST_HASH(match), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(match));
+  ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), METHOD_NAME(new));
+  ovm_classmethod_add(th, OVM_STR_CONST_HASH(match), METHOD_NAME(match1));
+  ovm_method_add(th, OVM_STR_CONST_HASH(match), METHOD_NAME(match));
 
   ovm_stack_unwind(th, old);
 }

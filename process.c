@@ -242,16 +242,16 @@ void __process_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t
   ovm_class_new(th, OVM_STR_CONST_HASH(Process), process_mark, process_free, process_cleanup);
   my_class = th->sp->objval;
 
-  ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(new));
-  ovm_method_add(th, _OVM_STR_CONST_HASH("argv"), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(argv));
-  ovm_method_add(th, _OVM_STR_CONST_HASH("stdin"), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(_stdin));
-  ovm_method_add(th, _OVM_STR_CONST_HASH("stdout"), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(_stdout));
-  ovm_method_add(th, _OVM_STR_CONST_HASH("stderr"), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(_stderr));
-  ovm_method_add(th, OVM_STR_CONST_HASH(pid), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(pid));
-  ovm_method_add(th, OVM_STR_CONST_HASH(kill), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(kill));
-  ovm_method_add(th, OVM_STR_CONST_HASH(wait), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(wait));
-  ovm_method_add(th, OVM_STR_CONST_HASH(write), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
-  ovm_method_add(th, OVM_STR_CONST_HASH(String), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(write));
+  ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), METHOD_NAME(new));
+  ovm_method_add(th, _OVM_STR_CONST_HASH("argv"), METHOD_NAME(argv));
+  ovm_method_add(th, _OVM_STR_CONST_HASH("stdin"), METHOD_NAME(_stdin));
+  ovm_method_add(th, _OVM_STR_CONST_HASH("stdout"), METHOD_NAME(_stdout));
+  ovm_method_add(th, _OVM_STR_CONST_HASH("stderr"), METHOD_NAME(_stderr));
+  ovm_method_add(th, OVM_STR_CONST_HASH(pid), METHOD_NAME(pid));
+  ovm_method_add(th, OVM_STR_CONST_HASH(kill), METHOD_NAME(kill));
+  ovm_method_add(th, OVM_STR_CONST_HASH(wait), METHOD_NAME(wait));
+  ovm_method_add(th, OVM_STR_CONST_HASH(write), METHOD_NAME(write));
+  ovm_method_add(th, OVM_STR_CONST_HASH(String), METHOD_NAME(write));
 
   ovm_stack_unwind(th, old);
 }

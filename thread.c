@@ -171,11 +171,11 @@ void __thread_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t 
 #undef  METHOD_CLASS
 #define METHOD_CLASS  Thread
   
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new),     OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(new));
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(current), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(current));
-    ovm_method_add(th, OVM_STR_CONST_HASH(detach),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(detach));
-    ovm_method_add(th, OVM_STR_CONST_HASH(cancel),  OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(cancel));
-    ovm_method_add(th, OVM_STR_CONST_HASH(join),    OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(join));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new),     METHOD_NAME(new));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(current), METHOD_NAME(current));
+    ovm_method_add(th, OVM_STR_CONST_HASH(detach),  METHOD_NAME(detach));
+    ovm_method_add(th, OVM_STR_CONST_HASH(cancel),  METHOD_NAME(cancel));
+    ovm_method_add(th, OVM_STR_CONST_HASH(join),    METHOD_NAME(join));
   
     ovm_stack_free(th, 1);
 
@@ -186,9 +186,9 @@ void __thread_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t 
 #undef  METHOD_CLASS
 #define METHOD_CLASS  Mutex
   
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(new));
-    ovm_method_add(th, OVM_STR_CONST_HASH(lock),   OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(lock));
-    ovm_method_add(th, OVM_STR_CONST_HASH(unlock), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(unlock));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(new), METHOD_NAME(new));
+    ovm_method_add(th, OVM_STR_CONST_HASH(lock),   METHOD_NAME(lock));
+    ovm_method_add(th, OVM_STR_CONST_HASH(unlock), METHOD_NAME(unlock));
 
     ovm_stack_unwind(th, old);
 }

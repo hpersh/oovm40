@@ -164,7 +164,7 @@ void __dns_init__(ovm_thread_t th, ovm_inst_t dst, unsigned argc, ovm_inst_t arg
     ovm_class_new(th, OVM_STR_CONST_HASH(Dns), 0, 0, 0);
     my_class = th->sp->objval;
 
-    ovm_classmethod_add(th, OVM_STR_CONST_HASH(getaddrinfo), OVM_INST_TYPE_CODEMETHOD, METHOD_NAME(getaddrinfo));
+    ovm_classmethod_add(th, OVM_STR_CONST_HASH(getaddrinfo), METHOD_NAME(getaddrinfo));
 
     ovm_stack_unwind(th, old);
 }

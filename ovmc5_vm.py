@@ -60,7 +60,7 @@ def gen_src_dst(src_dst):
 
 code = []
 cur_loc = 0
-symbol_dict = {}
+symbols_dict = {}
 symbol_refs_dict = {}
 
 def code_write(ofs, li):
@@ -76,22 +76,28 @@ def code_append(li):
     cur_loc += len(li)
         
 def symbol_add(nm):
-    assert nm not in symbol_dict
-    symbol_dict[nm] = cur_loc
+    assert nm not in symbols_dict
+    symbols_dict[nm] = cur_loc
     for x in symbol_refs_dict.get(nm, []):
         code_write(x, gen_int(cur_loc - (x + 9), 8))
 
 def symbol_ref_add(nm):
     symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [cur_loc]
-    if nm in symbol_dict:
-        code_append(gen_int(symbol_dict[nm] - (cur_loc + 9), 8))
+    if nm in symbols_dict:
+        n = 1
+        while True:
+            ofs = gen_int(symbols_dict[nm] - (cur_loc + n))
+            if len(ofs) == n:
+                break
+            n = (n + 1) if n < 7 else 9
+        code_append(ofs)
         return
     code_append(9 * [0])
 
 def symbols_dump():
-    for s in symbol_dict.items():
-        print '{}: {}'.format(s[0], s[1])
-        print '\trefs: {}'.format(symbol_refs_dict[s[0]])
+    for s in symbols_dict.items():
+        print '{}: 0x{:08x}'.format(s[0], s[1])
+        print '\trefs: {}'.format(['0x{:08x}'.format(x) for x in symbol_refs_dict.get(s[0], [])])
         
 def gen_stack_free(nd):
     code_append([0x01] + gen_uint(int(nd.get('size'))))
@@ -234,12 +240,13 @@ def output_write(modname):
         i += 1
         k = (k + 1) & 0x07;
     sys.stdout.write('\n};\n')
+    sys.stdout.write('/*\nSymbol table\n\n')
+    symbols_dump()
+    sys.stdout.write('*/\n')
     
 def process_file(infile):
     r = et.parse(open(infile)).getroot()
     modname = r.get('name')
-    code_append([0x0e])
-    symbol_ref_add('__{}_init__'.format(modname))
     for f in r:
         func_decl(f)
         if f.get('arrayarg') is None:
