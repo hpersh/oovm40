@@ -75,22 +75,25 @@ def code_append(li):
     global cur_loc
     cur_loc += len(li)
         
+def gen_jmp_ofs(to, from_):
+    n = 1
+    while True:
+        ofs = gen_int(to - (from_ + n))
+        if len(ofs) == n:
+            break
+        n = (n + 1) if n < 7 else 9
+    return ofs
+
 def symbol_add(nm):
     assert nm not in symbols_dict
     symbols_dict[nm] = cur_loc
     for x in symbol_refs_dict.get(nm, []):
-        code_write(x, gen_int(cur_loc - (x + 9), 8))
+        code_write(x, gen_jmp_ofs(cur_loc, x))
 
 def symbol_ref_add(nm):
     symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [cur_loc]
     if nm in symbols_dict:
-        n = 1
-        while True:
-            ofs = gen_int(symbols_dict[nm] - (cur_loc + n))
-            if len(ofs) == n:
-                break
-            n = (n + 1) if n < 7 else 9
-        code_append(ofs)
+        code_append(gen_jmp_ofs(symbols_dict[nm], cur_loc))
         return
     code_append(9 * [0])
 

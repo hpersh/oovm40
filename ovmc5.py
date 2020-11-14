@@ -62,10 +62,10 @@ def gen_float_newc(outf, nd):
 def gen_float_pushc(outf, nd):
     outf.write('ovm_float_pushc(th, {});\n'.format(nd.get('val')))
 
-def gen_codemethod_newc(outf, nd):
+def gen_method_newc(outf, nd):
     outf.write('ovm_codemethod_newc({}, {});\n'.format(gen_src_dst(nd.get('dst')), nd.get('func')))
     
-def gen_codemethod_pushc(outf, nd):
+def gen_method_pushc(outf, nd):
     outf.write('ovm_codemethod_pushc(th, {});\n'.format(nd.get('func')))
 
 def gen_str_newc(outf, nd):
@@ -126,15 +126,6 @@ def gen_retd(outf, nd):
     outf.write('ovm_inst_assign(dst, &argv[0]);\n')
     outf.write('return;\n')
 
-def gen_class_add(outf, nd):
-    outf.write('ovm_user_class_new(th, _OVM_STR_CONST_HASH("{}"));\n'.format(nd.get('name')))
-
-def gen_method_add(outf, nd):
-    outf.write('ovm_method_add(th, _OVM_STR_CONST_HASH("{}"), OVM_INST_TYPE_CODEMETHOD, {});\n'.format(nd.get('name'), nd.get('func')))
-   
-def gen_classmethod_add(outf, nd):
-    outf.write('ovm_classmethod_add(th, _OVM_STR_CONST_HASH("{}"), OVM_INST_TYPE_CODEMETHOD, {});\n'.format(nd.get('name'), nd.get('func')))
-   
 def gen_node(outf, nd):    
     exec('gen_{}(outf, nd)'.format(nd.tag))
 

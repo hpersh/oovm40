@@ -235,11 +235,11 @@ def gen_float_newc(outf, dst, val):
         return
     et.SubElement(outf, 'float_newc', attrib={'dst': dst, 'val': str(val)})    
 
-def gen_codemethod_newc(outf, dst, funcname):
+def gen_method_newc(outf, dst, funcname):
     if dst == 'push':
-        et.SubElement(outf, 'codemethod_pushc', attrib={'func': funcname})    
+        et.SubElement(outf, 'method_pushc', attrib={'func': funcname})    
         return
-    et.SubElement(outf, 'codemethod_newc', attrib={'dst': dst, 'func': funcname})    
+    et.SubElement(outf, 'method_newc', attrib={'dst': dst, 'func': funcname})    
 
 def gen_str_newc(outf, dst, val):
     if dst == 'push':
@@ -935,8 +935,14 @@ def _parse_method(outf, dst, nd):
     nm = nd[0][0].get('val')
     funcname = method_func_name(nm)
     __parse_method(outf, dst, nm, funcname, nd[0][1], nd[1])
-    et.SubElement(init, 'classmethod_add' if nd.tag == 'clmethod' else 'method_add', attrib={'name': nm, 'func': funcname})
-    
+    gen_stack_alloc(init, 3)
+    gen_inst_assign(init, 'sp[0]', 'sp[3]')
+    gen_method_call(init, 'sp[0]', 'classmethods' if nd.tag == 'clmethod' else 'methods', 1)
+    gen_str_newch(init, 'sp[1]', nm)
+    gen_method_newc(init, 'sp[2]', funcname)
+    gen_method_call(init, 'sp[2]', 'atput', 3)
+    gen_stack_free(init, 3)
+
 def parse_method(outf, dst, nd):
     _parse_method(body, dst, nd)
 
@@ -1049,8 +1055,12 @@ def parse_class(outf, dst, nd):
         clinfo = class_scan(nd)
         for c in nd[2]:
             class_implements_iface(nd, clinfo, c.get('val'))
-    parse_node(init, 'push', nd[1])
-    et.SubElement(init, 'class_add', attrib={'name': nm})
+    gen_stack_alloc(init, 4)
+    gen_environ_at(init, 'sp[0]', '#Metaclass')
+    gen_str_newch(init, 'sp[1]', nm)
+    parse_node(init, 'sp[2]', nd[1])
+    gen_method_call(init, 'sp[3]', 'new', 3)
+    gen_stack_free(init, 3)
     fr = class_push(nd)
     for c in nd[3]:
         parse_node(outf, dst, c)
@@ -1073,10 +1083,8 @@ def parse_module(outf, dst, nd):
     modname = nd.get('val')
     global init
     init = et.Element('func', attrib={'name': '__{}_init__'.format(modname), 'argc': '1', 'visibility': 'public'})
-    gen_stack_push(init, 'ap[0]')
     for c in nd:
         parse_node(init, dst, c)
-    gen_stack_free(init, 1)
     gen_retd(init)
 
 def parse_node(outf, dst, nd):
@@ -1086,10 +1094,10 @@ def parse_node(outf, dst, nd):
 def process_file(infile):
     parse_node(body, None, et.parse(open(infile)).getroot())
     r = et.Element('module', attrib={'name': modname})
+    r.append(init)
     for x in [anon, body]:
         for c in x:
             r.append(c)
-    r.append(init)
     et.ElementTree(r).write(sys.stdout)
 
 def main():
