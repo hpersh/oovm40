@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Compiler pass 5 - Generate C code file from VM code
+# Compiler pass 5 - Generate VM instructions
 
 import sys
 import xml.etree.ElementTree as et

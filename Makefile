@@ -86,7 +86,7 @@ ARCH	= $(shell gcc -dumpmachine)
 INSTALL_LIBS	= liboovm liboovmmath liboovmthread liboovmregexp liboovmsocket liboovmprocess liboovmdns liboovmdatetime liboovmhttp liboovmxml liboovmctype
 INSTALL_LIBS_DIR	= $(INSTALL_ROOT)/lib/$(ARCH)
 
-INSTALL_BINS_LIB	= ovmc1 ovmc2.py ovmc3.py ovmc4.py ovmc5.py oovm_hash
+INSTALL_BINS_LIB	= ovmc1 ovmc2.py ovmc3.py ovmc4.py ovmc5_vm.py ovmc5_c.py oovm_hash
 INSTALL_BINS_LIB_DIR	= $(INSTALL_ROOT)/libexec/$(ARCH)
 
 INSTALL_SHARES	= oovmpp.m4
