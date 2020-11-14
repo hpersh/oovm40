@@ -56,12 +56,19 @@ oovm_hash: oovm_hash.c oovm_hash.h
 	$(LT_CC) $(CFLAGS) -Wa,-ahls=$*.s $*_ovm2.c -o $*.o
 	$(LT_LD) -o liboovm$*.la $*.lo -L.libs -loovm
 
+STAGE5 =	./ovmc5_vm.py
+ifdef TARGET
+ifeq ($(TARGET), C)
+STAGE5 =	./ovmc5_c.py
+endif
+endif
+
 %.c: %.ovm
 	./ovmc1 $< > $*.xml
 	./ovmc2.py $*.xml > $*_2.xml
 	./ovmc3.py $*_2.xml > $*_3.xml
 	./ovmc4.py $*_3.xml > $*_4.xml
-	./ovmc5.py $*_4.xml > $*.c
+	$(STAGE5) $*_4.xml > $*.c
 
 MONOLITHIC_MODULE	= perf2
 

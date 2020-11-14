@@ -184,11 +184,13 @@ def gen_bool_newc(nd):
 def gen_bool_pushc(nd):
     code_append([0x1b if nd.get('val') == '#true' else 0x1a])
 
+str_to_int_ldrs_to_base = {'0x': 16, '0b': 2}
+    
 def gen_int_newc(nd):
-    code_append([0x1c] + gen_src_dst(nd.get('dst')) + gen_int(int(nd.get('val'))))
+    code_append([0x1c] + gen_src_dst(nd.get('dst')) + gen_int(int(nd.get('val'), 0)))
 
 def gen_int_pushc(nd):
-    code_append([0x1d] + gen_int(int(nd.get('val'))))
+    code_append([0x1d] + gen_int(int(nd.get('val'), 0)))
 
 def gen_float_newc(nd):
     code_append([0x1e] + gen_src_dst(nd.get('dst')) + gen_str(float(nd.get('val')).hex()))
@@ -216,11 +218,11 @@ def gen_str_newch(nd):
 def gen_str_pushch(nd):
     code_append([0x25] + gen_str_hash(nd.get('val')))
 
-def gen_argc_chk(nd):
-    code_append([0x26] + gen_uint(int(nd.get('argc'))))
+def gen_argc_chk(argc):
+    code_append([0x26] + gen_uint(argc))
 
-def gen_array_arg_push(nd):
-    code_append([0x27] + gen_uint(int(nd.get('argc)') - 1)))
+def gen_array_arg_push(argc):
+    code_append([0x27] + gen_uint(argc - 1))
     
 def gen_label(nd):
     symbol_add(nd.get('name'))
@@ -252,10 +254,11 @@ def process_file(infile):
     modname = r.get('name')
     for f in r:
         func_decl(f)
+        argc = int(f.get('argc'))
         if f.get('arrayarg') is None:
-            gen_argc_chk(f)
+            gen_argc_chk(argc)
         else:
-            get_array_arg_push(f)
+            gen_array_arg_push(argc)
         for s in f:
             gen_node(s)
     output_write(modname)

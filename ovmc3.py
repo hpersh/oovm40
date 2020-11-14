@@ -956,15 +956,15 @@ def parse_anon(outf, dst, nd):
     anon_num += 1
     funcname = '{}$__anon__${}'.format(modname, anon_num)
     __parse_method(anon, dst, funcname, funcname, nd[0], nd[1])
-    gen_codemethod_newc(outf, dst, funcname)
+    gen_method_newc(outf, dst, funcname)
 
 def parse_func(outf, dst, nd):
     funcname = method_func_name(nd[0][0].get('val'))
     __parse_method(anon, dst, funcname, funcname, nd[0][1], nd[1])
-    gen_codemethod_newc(outf, dst, funcname)
+    gen_method_newc(outf, dst, funcname)
 
 def parse_recurse(outf, dst, nd):
-    gen_codemethod_newc(outf, dst, method_func_name(''))    
+    gen_method_newc(outf, dst, method_func_name(''))    
     
 ifaces = {}
 
