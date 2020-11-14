@@ -2809,7 +2809,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
             goto _return;
 
         case 0x09:
-            ovm_frame_except_push(th, interp_base_ofs(th));
+            setjmp(ovm_frame_except_push(th, interp_base_ofs(th)));
             break;
 
         case 0x0a:

@@ -6,6 +6,7 @@ progname=$0
 
 extra_libs=''
 static=0
+target=vm
 verbose=0
 while [[ $# -gt 1 ]]
 do
@@ -22,6 +23,10 @@ do
 	-s)
 	    static=1
 	;;
+	-t)
+	    target=$2
+	    shift
+	 ;;
 	-v)
 	    verbose=1
 	;;
@@ -54,7 +59,7 @@ then
     $libexec_dir/ovmc2.py ${f}.xml > ${f}_2.xml
     $libexec_dir/ovmc3.py ${f}_2.xml > ${f}_3.xml
     $libexec_dir/ovmc4.py ${f}_3.xml > ${f}_4.xml
-    $libexec_dir/ovmc5.py ${f}_4.xml > ${f}.c
+    $libexec_dir/ovmc5_${target}.py ${f}_4.xml > ${f}.c
 fi
 gcc -E -I /usr/local/include/oovm ${f}.c >${f}_ovm1.c
 m4 -P /usr/local/share/oovm/oovmpp.m4 ${f}_ovm1.c >${f}_ovm2.c
