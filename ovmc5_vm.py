@@ -43,8 +43,29 @@ def gen_uint(n, force=None):
 def gen_uint32(n):
     return [byte(n, i) for i in reversed(range(4))]
 
+def str_to_bytes(s):
+    result = []
+    n = len(s)
+    i = 0
+    while i < n:
+        c = s[i]
+        if c == '\\':
+            i += 1
+            c = s[i]
+            if c == 'n':
+                c = '\n'
+            elif c == 'r':
+                c = '\r'
+            elif c == 't':
+                c = '\t'
+        result.append(ord(c))
+        i += 1
+    result.append(0)
+    return result
+
 def gen_str(s):
-    return gen_uint(len(s) + 1) + [ord(c) for c in s] + [0]
+    li = str_to_bytes(s)
+    return gen_uint(len(li)) + li
 
 def gen_str_hash(s):
     return gen_str(s) + gen_uint32(zlib.crc32(s))

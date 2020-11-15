@@ -68,7 +68,7 @@
 	    Start.reraiser(lvl - 1, type);
 	}
 	catch {
-            #System.assert(e.type == type && e.method.write() == "&Codemethod(test2.Start.raiser)", "Except-2.1, got: [0]".format(e));
+            #System.assert(e.type == type, "Except-2.1, got: [0]".format(e));
             #Exception.reraise();
 	}
 	none {
@@ -97,8 +97,7 @@
 	    x = #Integer.new("xyz");
 	} catch {
             #System.assert(e.type == "system.invalid-value"
-	                   && e.value == "xyz"
-			   && e.method.write() == "&Codemethod(main.String.Integer)",
+	                   && e.value == "xyz",
 			   "Except-system-1, got: [0]".format(e)
 			   );
         } any {
@@ -114,8 +113,7 @@
 	} catch {
             #System.assert(e.type == "system.no-method"
 	                   && e.receiver == 13
-			   && e.selector == "foo"
-			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+			   && e.selector == "foo",
 			   "Except-system-4, got: [0]".format(e)
 			   );
         } any {
@@ -130,8 +128,7 @@
 	    x = y;
 	} catch {
             #System.assert(e.type == "system.no-variable"
-			   && e.name == "y"
-			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+	                   && e.name == "y",
 			   "Except-system-7, got: [0]".format(e)
 			   );
         } any {
@@ -146,10 +143,8 @@
 	    Start.test_except("foo");
 	} catch {
             #System.assert(e.type == "system.number-of-arguments"
-	                   && !regexp.Regexp.match(".*[0]\\.[1]\\.[2]".format(@module, @class, "test_except"), e.method.write()).isnil()
 			   && e.expected == 1
-			   && e.got == 2
-			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+			   && e.got == 2,
 			   "Except-system-10, got: [0]".format(e)
 			   );
         } any {
@@ -164,10 +159,8 @@
 	    Start.test_array_args();
 	} catch {
             #System.assert(e.type == "system.number-of-arguments"
-	                   && !regexp.Regexp.match(".*[0]\\.[1]\\.[2]".format(@module, @class, "test_array_args"), e.method.write()).isnil()
 			   && e.minimum == 2
-			   && e.got == 1
-			   && e.method.write() == "&Codemethod(test2.Start.test_array_args)",
+			   && e.got == 1,
 			   "Except-system-13, got: [0]".format(e)
 			   );
         } any {
@@ -184,8 +177,7 @@
 	} catch {
             #System.assert(e.type == "system.no-attribute"
 	                   && e.instance == i
-			   && e.attribute == "foo"
-			   && e.method.write() == "&Codemethod(main.Object.ate)",
+			   && e.attribute == "foo",
 			   "Except-system-16, got: [0]".format(e)
 			   );
         } any {
@@ -202,8 +194,7 @@
 	} catch {
             #System.assert(e.type == "system.index-range"
 	                   && e.instance == a
-			   && e.index == 5
-			   && e.method.write() == "&Codemethod(main.Array.at)",
+			   && e.index == 5,
 			   "Except-system-19, got: [0]".format(e)
 			   );
         } any {
@@ -221,8 +212,7 @@
             #System.assert(e.type == "system.index-range"
 	                   && e.instance == a
 			   && e.index == 5
-			   && e.length == 3
-			   && e.method.write() == "&Codemethod(main.Array.slice)",
+			   && e.length == 3,
 			   "Except-system-22, got: [0]".format(e)
 			   );
         } any {
@@ -239,8 +229,7 @@
 	} catch {
             #System.assert(e.type == "system.key-not-found"
 	                   && e.instance == d
-			   && e.key == "xyz"
-			   && e.method.write() == "&Codemethod(main.Dictionary.ate)",
+			   && e.key == "xyz",
 			   "Except-system-25, got: [0]".format(e)
 			   );
         } any {
@@ -256,8 +245,7 @@
 	} catch {
             #System.assert(e.type == "system.modify-constant"
 	                   && e.instance == d
-			   && e.key == "#foo"
-			   && e.method.write() == "&Codemethod(main.Dictionary.atput)",
+			   && e.key == "#foo",
 			   "Except-system-28, got: [0]".format(e)
 			   );
         } any {
@@ -276,8 +264,7 @@
             #System.assert(e.type == "system.file-open"
 	                   && e.filename == filename
 			   && e.mode == mode
-			   && e.message == "No such file or directory"
-			   && e.method.write() == "&Codemethod(main.File.new)",
+			   && e.message == "No such file or directory",
 			   "Except-system-31, got: [0]".format(e)
 			   );
         } any {
@@ -294,8 +281,7 @@
 	} catch {
             #System.assert(e.type == "system.module-load"
 	                   && e.name == modulename
-	                   && e.message == "module not found"
-			   && e.method.write() == "&Codemethod(main.Module.new)",
+			   && e.message == "module not found",
 			   "Except-system-34, got: [0]".format(e)
 			   );
         } any {
@@ -312,8 +298,7 @@
         try (e) {
 	    s = a.write();
 	} catch {
-            #System.assert(e.type == "system.descent-loop"
-			   && e.method.write() == "&Codemethod(main.Dictionary.write)",
+            #System.assert(e.type == "system.descent-loop",
 	                   "Except-system-37, got: [0]".format(e)
 			   );
         } any {
@@ -327,11 +312,10 @@
 
         f = #false;
 	try (e) {
-		Start.raiser(0, "foo");
+	    Start.raiser(0, "foo");
 	}
 	catch {
-            #System.assert(e.type == "foo"
-			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+            #System.assert(e.type == "foo",
 	                   "Except-raise-1, got: [0]".format(e)
 			   );
 	}
@@ -347,8 +331,7 @@
 	    Start.raiser(3, "foo");
 	}
 	catch {
-            #System.assert(e.type == "foo"
-			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+            #System.assert(e.type == "foo",
 	                   "Except-raise-3, got: [0]".format(e)
 			   );
 	}
@@ -362,8 +345,7 @@
 	    Start.reraiser(0, "bar");
 	}
 	catch {
-            #System.assert(e.type == "bar"
-			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+            #System.assert(e.type == "bar",
 	                   "Except-reraise-3, got: [0]".format(e)
 			   );
 	}
@@ -375,8 +357,7 @@
 	    Start.reraiser(3, "bar");
 	}
 	catch {
-            #System.assert(e.type == "bar"
-			   && e.method.write() == "&Codemethod(test2.Start.raiser)",
+            #System.assert(e.type == "bar",
 	                   "Except-reraise-5, got: [0]".format(e)
 			   );
 	}
@@ -401,8 +382,7 @@
 	}
 	catch {
             #System.assert(e.type == "system.no-variable"
-	                   && e.name == "y"
-			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+	                   && e.name == "y",
 			   "Except-stack-alloc-3, got: [0]".format(e)
 			   );
 	}
@@ -415,8 +395,7 @@
 	}
 	catch {
             #System.assert(ee.type == "system.no-variable"
-	                   && ee.name == "e"
-			   && ee.method.write() == "&Codemethod(main.Environment.ate)",
+	                   && ee.name == "e",
 			   "Except-stack-alloc-5, got: [0]".format(ee)
 			   );
 	}
@@ -430,8 +409,7 @@
             #Exception.new("user1").raise();
 	}
 	catch {
-            #System.assert(e.type == "user1"
-			   && e.method.write() == "&Codemethod(test2.Start.test_except)",
+            #System.assert(e.type == "user1",
 			   "Except-user-1, got: [0]".format(e)
 			   );
 	}
@@ -477,8 +455,7 @@
 	}
 	catch {
             #System.assert(e.type == "system.no-variable"
-	                   && e.name == "a"
-			   && e.method.write() == "&Codemethod(main.Environment.ate)",
+	                   && e.name == "a",
 			   "Vars-4.3, got: [0]".format(e)
 			   );
 	}
@@ -506,8 +483,7 @@
 	}
 	catch {
             #System.assert(e.type == "system.modify-constant"
-	                   && e.key == "#Integer"
-			   && e.method.write() == "&Codemethod(main.Namespace.atput)",
+	                   && e.key == "#Integer",
 			   "Consts-1.1, got: [0]".format(e)
 			   );
 	}
@@ -521,8 +497,7 @@
 	}
 	catch {
             #System.assert(e.type == "system.modify-constant"
-	                   && e.key == "#foo"
-			   && e.method.write() == "&Codemethod(main.Dictionary.atput)",
+	                   && e.key == "#foo",
 			   "Consts-1.3, got: [0]".format(e)
 			   );
 	}
@@ -627,8 +602,7 @@
             x = #Boolean.new("foo");
 	} catch {
             #System.assert(e.type == "system.invalid-value"
-		           && e.value == "foo"
-			   && e.method.write() == "&Codemethod(main.String.Boolean)",
+	                   && e.value == "foo",
 			   "Boolean-2.5, got: [0]".format(e)
 			   );
         } none {
@@ -650,8 +624,7 @@
 	    x = #Integer.new("foo");
 	} catch {
             #System.assert(e.type == "system.invalid-value"
-	                   && e.value == "foo"
-			   && e.method.write() == "&Codemethod(main.String.Integer)",
+	                   && e.value == "foo",
 			   "Integer-new-7, got: [0]".format(e)
 			   );
 	} none {
@@ -684,8 +657,7 @@
 	} catch {
             #System.assert(e.type == "system.index-range"
 	                   && e.instance == s
-			   && e.index == 99
-			   && e.method.write() == "&Codemethod(main.String.at)",
+			   && e.index == 99,
 			   "String-at-3"
 			   );
 	} none {
@@ -696,8 +668,7 @@
 	} catch {
             #System.assert(e.type == "system.index-range"
 	                   && e.instance == s
-			   && e.index == -99
-			   && e.method.write() == "&Codemethod(main.String.at)",
+			   && e.index == -99,
 			   "String-at-5"
 			   );
 	} none {
@@ -712,8 +683,7 @@
 	    t = s.concat(123);
 	} catch {
             #System.assert(e.type == "system.invalid-value"
-	                   && e.value == 123
-			   && e.method.write() == "&Codemethod(main.String.concat)",
+	                   && e.value == 123,
 			   "String-concat-2"
 			   );
 	} none {
