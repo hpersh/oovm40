@@ -249,16 +249,19 @@ def func_decl(f):
 
 def listing_node(nd):
     t = nd.tag
-    if t in ['func', 'label']:
+    if t == 'label':
         sys.stdout.write('{}:\n'.format(nd.get('name')))
         return
+    if t == 'func':
+        sys.stdout.write('\n{}:'.format(nd.get('name')))
+    else:
+        sys.stdout.write(t)
+        for a in nd.attrib.items():
+            if a[0] in ['ofs', 'len']:
+                continue
+            sys.stdout.write(' {}={}'.format(a[0], a[1]))
     ofs = int(nd.get('ofs'))
     n = int(nd.get('len'))
-    sys.stdout.write(t)
-    for a in nd.attrib.items():
-        if a[0] in ['ofs', 'len']:
-            continue
-        sys.stdout.write(' {}={}'.format(a[0], a[1]))
     sys.stdout.write('\n\t{:08x} '.format(ofs))
     while n > 0:
         sys.stdout.write('{:02x} '.format(code[ofs]))
