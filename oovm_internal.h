@@ -136,7 +136,8 @@ struct ovm_thread {
     unsigned except_lvl;
     struct ovm_frame_except *xfp;
     bool exceptf;
-    unsigned char *pc;
+    unsigned char *pc, *pc_instr_start;
+    bool tracef;
     int _errno;
     unsigned fatal_lvl;
 };

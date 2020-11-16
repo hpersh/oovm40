@@ -3,7 +3,7 @@ include config.mk
 BISONFLAGS = -d
 FLEXFLAGS  = -d
 CC	= gcc
-CPP	= $(CC) -E
+CPP	= $(CC) -E $(CFLAGS_CPP)
 LT_CC	= libtool --tag=CC --mode=compile $(CC) -c
 RPATH	= /usr/local/lib
 LT_LD	= libtool --tag=CC --mode=link $(CC) -rpath $(RPATH) -rdynamic

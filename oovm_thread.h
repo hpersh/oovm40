@@ -17,7 +17,8 @@
 
 /** \brief Thread fatal error exit codes */
 enum {
-    OVM_THREAD_FATAL_ABORTED = 0xe0, /**< Thread called System.abort() */
+    _OVM_THREAD_FATAL_FIRST = 0xe0,
+    OVM_THREAD_FATAL_ABORTED = _OVM_THREAD_FATAL_FIRST, /**< Thread called System.abort() */
     OVM_THREAD_FATAL_ASSERT_FAILED, /**< Thread called System.assert(), and assertion failed */
     OVM_THREAD_FATAL_INVALID_OPCODE, /**< Invalid opcde */
     OVM_THREAD_FATAL_STACK_OVERFLOW,  /**< Instance stack overflow */
@@ -26,7 +27,8 @@ enum {
     OVM_THREAD_FATAL_FRAME_STACK_UNDERFLOW, /**< Frame stack underflow */
     OVM_THREAD_FATAL_NO_FRAME, /**< Required frame not on frame stack */
     OVM_THREAD_FATAL_UNCAUGHT_EXCEPT, /**< Exception raised but not caught */
-    OVM_THREAD_FATAL_DOUBLE_EXCEPT /**< Exception during exception processing */
+    OVM_THREAD_FATAL_DOUBLE_EXCEPT, /**< Exception during exception processing */
+    _OVM_THREAD_FATAL_LIMIT,
 };
 
 /**

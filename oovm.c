@@ -20,6 +20,7 @@
 
 #include <ctype.h>
 #include <dlfcn.h>
+#include <link.h>
 #include <sys/mman.h>
 
 /***************************************************************************/
@@ -85,7 +86,7 @@ static const char *fatal_mesg(unsigned exit_code)
     static const char * const tbl[] = {
         "Aborted",
         "Assertion failed",
-        "Invalid value",
+        "Invalid instruction",
         "Stack overflow",
         "Stack underflow",
         "Frame stack overflow",
@@ -94,10 +95,12 @@ static const char *fatal_mesg(unsigned exit_code)
         "Stack access range",
         "Uncaught exception",
         "Double exception",
-        "Invalid instruction"
     };
 
-    return (exit_code >= ARRAY_SIZE(tbl) ? 0 : tbl[exit_code]);
+    if (exit_code < _OVM_THREAD_FATAL_FIRST)  return (0);
+    unsigned ofs = exit_code - _OVM_THREAD_FATAL_FIRST;
+    if (ofs >= ARRAY_SIZE(tbl))  return (0);
+    return (tbl[ofs]);
 };
 
 static ovm_thread_t main_thread;
@@ -2702,6 +2705,44 @@ static ovm_floatval_t interp_floatval(ovm_thread_t th)
     return (result);
 }
 
+static unsigned symbol_lkup(unsigned bufsize, char *buf, void *addr)
+{
+    Dl_info dlinfo[1];
+    if (dladdr(addr, dlinfo) == 0 || dlinfo->dli_sname == 0) {
+        snprintf(buf, bufsize, "%p", addr);
+	return (strlen(buf) + 1);
+    }
+    const char *q = dlinfo->dli_sname;
+    unsigned n = strlen(q) + 1;
+    char sbuf[n], *p;
+    for (p = sbuf; n > 0; --n, ++p, ++q) {
+	char c = *q;
+	*p = (c == '$') ? '.' : c;
+    }
+    char obuf[20];
+    if (p == dlinfo->dli_saddr) {
+	obuf[0] = 0;
+    } else {
+	snprintf(obuf, sizeof(obuf), "+0x%lx", (unsigned char *) addr - (unsigned char *) dlinfo->dli_saddr);
+    }
+    snprintf(buf, bufsize, "%s%s", sbuf, obuf);
+        
+    return (strlen(buf) + 1);
+}
+
+static void interp_invalid_opcode(ovm_thread_t th)
+{
+    unsigned char *p = th->pc_instr_start;
+    char sbuf[64];
+    symbol_lkup(sizeof(sbuf), sbuf, p);
+    unsigned n = th->pc - p;
+    char bbuf[3 * n + 1], *q;
+    for (q = bbuf; n > 0; --n, q += 3, ++p) {
+	sprintf(q, "%02x ", *p);
+    }
+    OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, "%s: %s", sbuf, bbuf);
+}
+
 static ovm_inst_t interp_base_ofs(ovm_thread_t th)
 {
     unsigned char op = *th->pc;
@@ -2711,21 +2752,21 @@ static ovm_inst_t interp_base_ofs(ovm_thread_t th)
     ovm_inst_t result;
     switch (op & 0x18) {
     case 0:
-        if (ofs < 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (ofs < 0)  interp_invalid_opcode(th);
         result = th->sp + ofs;
-        if (result >= mcfp->bp)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (result >= mcfp->bp)  interp_invalid_opcode(th);
         break;
     case 0x08:
-        if (ofs >= 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (ofs >= 0)  interp_invalid_opcode(th);
         result = mcfp->bp + ofs;
-        if (result < th->sp)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (result < th->sp)  interp_invalid_opcode(th);
         break;
     case 0x10:
-        if (ofs < 0 || ofs >= mcfp->argc)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (ofs < 0 || ofs >= mcfp->argc)  interp_invalid_opcode(th);
         result = mcfp->ap + ofs;
         break;
     default:
-        if (n != 0 || ofs != 0)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+        if (n != 0 || ofs != 0)  interp_invalid_opcode(th);
         result = mcfp->dst;
     }
 
@@ -2750,41 +2791,84 @@ static inline void method_pushc(ovm_thread_t th, ovm_method_t m)
     th->sp = p;
 }
 
-static void interp(ovm_thread_t th, ovm_method_t m)
+#ifdef NDEBUG
+#define interp_debug(x)
+#define interp_trace(x)
+#else
+
+static void interp_debug(ovm_thread_t th)
+{
+}
+
+static void interp_trace(ovm_thread_t th)
+{
+    if (!th->tracef)  return;
+    unsigned char *p = th->pc_instr_start;
+    char buf[64];
+    symbol_lkup(sizeof(buf), buf, p);
+    fprintf(stderr, "%s: ", buf);
+    for ( ; p < th->pc; ++p) {
+	fprintf(stderr, "%02x ", *p);
+    }
+    fputs("\n", stderr);
+}
+
+#endif /* NDEBUG */
+
+static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 {
     unsigned char *old = th->pc;
     th->pc = m;
     struct ovm_frame_mc *mcfp = thread_mcfp(th);
     for (;;) {
+	th->pc_instr_start = th->pc;
+	interp_debug(th);
         unsigned char op = *th->pc++;
         switch (op) {
         case 0x00:
+	    interp_trace(th);
             break;
 
         case 0x01:
-            ovm_stack_free(th, interp_uintval(th));
+	    {
+		unsigned long long n = interp_uintval(th);
+		interp_trace(th);
+		ovm_stack_free(th, n);
+	    }
             break;
 
         case 0x02:
-            ovm_stack_alloc(th, interp_uintval(th));
+	    {
+		unsigned long long n = interp_uintval(th);
+		interp_trace(th);
+		ovm_stack_alloc(th, n);
+	    }
             break;
 
         case 0x03:
             {
                 unsigned size_free = interp_uintval(th);
-                ovm_stack_free_alloc(th, size_free, interp_uintval(th));
+                unsigned size_alloc = interp_uintval(th);
+		interp_trace(th);
+                ovm_stack_free_alloc(th, size_free, size_alloc);
             }
             break;
 
         case 0x04:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
-                ovm_inst_assign(dst, interp_base_ofs(th));
+                ovm_inst_t src = interp_base_ofs(th);
+		interp_trace(th);
+                ovm_inst_assign(dst, src);
             }
             break;
 
         case 0x05:
-            ovm_stack_push(th, interp_base_ofs(th));
+	    {
+		ovm_inst_t src = interp_base_ofs(th);
+		interp_trace(th);
+		ovm_stack_push(th, src);
+	    }
             break;
 
         case 0x06:
@@ -2794,81 +2878,106 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 const char *sel;
                 interp_strval(th, &sel_size, &sel);
                 unsigned sel_hash = interp_uint32(th);
-                ovm_method_callsch(th, dst, sel_size, sel, sel_hash, interp_uintval(th));
+		unsigned argc = interp_uintval(th);
+		interp_trace(th);
+		ovm_method_callsch(th, dst, sel_size, sel, sel_hash, argc);
             }
             break;
 
         case 0x07:
-            goto _return;
+	    interp_trace(th);
+	    goto _return;
 
         case 0x08:
             {
+		interp_trace(th);		
                 struct ovm_frame_mc *mcfp = thread_mcfp(th);
                 ovm_inst_assign(mcfp->dst, &mcfp->ap[0]);
             }
-            goto _return;
+	    goto _return;
 
         case 0x09:
-            setjmp(ovm_frame_except_push(th, interp_base_ofs(th)));
+	    {
+		ovm_inst_t var = interp_base_ofs(th);
+		interp_trace(th);
+		setjmp(ovm_frame_except_push(th, var));
+	    }
             break;
 
         case 0x0a:
-            ovm_except_raise(th, interp_base_ofs(th));
+	    {
+		ovm_inst_t arg = interp_base_ofs(th);
+		interp_trace(th);
+		ovm_except_raise(th, arg);
+	    }
             break;
 
         case 0x0b:
+	    interp_trace(th);
             ovm_except_reraise(th);
             break;
 
         case 0x0c:
+	    interp_trace(th);
             ovm_frame_except_pop(th, 1);
             break;
 
         case 0x0d:
-            ovm_frame_except_pop(th, interp_uintval(th));
+	    {
+		unsigned n = interp_uintval(th);
+		interp_trace(th);
+		ovm_frame_except_pop(th, n);
+	    }
             break;
 
         case 0x0e:
-            th->pc += interp_intval(th);
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		th->pc += ofs;
+	    }
             break;
 
         case 0x0f:
-            {
-                long long ofs = interp_intval(th);
-                if (ovm_inst_boolval(th, th->sp))  th->pc += ofs;
-            }
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		if (ovm_inst_boolval(th, th->sp))  th->pc += ofs;
+	    }
             break;
             
         case 0x10:
-            {
-                long long ofs = interp_intval(th);
-                if (!ovm_inst_boolval(th, th->sp))  th->pc += ofs;
-            }
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		if (!ovm_inst_boolval(th, th->sp))  th->pc += ofs;
+	    }
             break;
             
         case 0x11:
-            {
-                long long ofs = interp_intval(th);
-                if (ovm_except_chk(th))  th->pc += ofs;
-            }
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		if (ovm_except_chk(th))  th->pc += ofs;
+	    }
             break;
 
         case 0x12:
-            {
-                long long ofs = interp_intval(th);
-                bool f = ovm_inst_boolval(th, th->sp);
-                ovm_stack_free(th, 1);
-                if (f)  th->pc += ofs;
-            }
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		if (ovm_inst_boolval(th, th->sp))  th->pc += ofs;
+		ovm_stack_free(th, 1);
+	    }
             break;
 
         case 0x13:
-            {
-                long long ofs = interp_intval(th);
-                bool f = ovm_inst_boolval(th, th->sp);
-                ovm_stack_free(th, 1);
-                if (!f)  th->pc += ofs;
-            }
+	    {
+		long long ofs = interp_intval(th);
+		interp_trace(th);
+		if (!ovm_inst_boolval(th, th->sp))  th->pc += ofs;
+		ovm_stack_free(th, 1);
+	    }
             break;
 
         case 0x14:
@@ -2877,7 +2986,9 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_environ_atc(th, dst, size, data, interp_uint32(th));
+		unsigned hash = interp_uint32(th);
+		interp_trace(th);
+		ovm_environ_atc(th, dst, size, data, hash);
             }
             break;
             
@@ -2886,54 +2997,79 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_environ_atc_push(th, size, data, interp_uint32(th));
+		unsigned hash = interp_uint32(th);
+		interp_trace(th);
+                ovm_environ_atc_push(th, size, data, hash);
             }
             break;
 
         case 0x16:
-            ovm_inst_assign_obj(interp_base_ofs(th), 0);
+	    {
+		ovm_inst_t dst = interp_base_ofs(th);
+		interp_trace(th);
+		ovm_inst_assign_obj(dst, 0);
+	    }
             break;
 
         case 0x17:
+	    interp_trace(th);
             ovm_stack_push_obj(th, 0);
             break;
 
         case 0x18:
         case 0x19:
-            ovm_bool_newc(interp_base_ofs(th), op & 1);
+	    {
+		ovm_inst_t dst = interp_base_ofs(th);
+		interp_trace(th);
+		ovm_bool_newc(dst, op & 1);
+	    }
             break;
             
         case 0x1a:
         case 0x1b:
+	    interp_trace(th);
             ovm_bool_pushc(th, op & 1);
             break;
             
         case 0x1c:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
-                ovm_int_newc(dst, interp_intval(th));
+		ovm_intval_t val = interp_intval(th);
+		interp_trace(th);
+                ovm_int_newc(dst, val); 
             }
             break;
 
         case 0x1d:
-            ovm_int_pushc(th, interp_intval(th));
+	    {
+		ovm_intval_t val = interp_intval(th);
+		interp_trace(th);
+		ovm_int_pushc(th, val);
+	    }
             break;
              
         case 0x1e:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
-                ovm_float_newc(dst, interp_floatval(th));
+		ovm_floatval_t val = interp_floatval(th);
+		interp_trace(th);
+                ovm_float_newc(dst, val);
             }
             break;
 
         case 0x1f:
-            ovm_float_pushc(th, interp_floatval(th));
+	    {
+		ovm_floatval_t val = interp_floatval(th);
+		interp_trace(th);
+		ovm_float_pushc(th, val);
+	    }
             break;
 
         case 0x20:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
 		long long ofs = interp_intval(th);
+		interp_trace(th);
                 method_newc(dst, (ovm_method_t)(th->pc + ofs));
             }
             break;
@@ -2941,6 +3077,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
         case 0x21:
 	    {
 		long long ofs = interp_intval(th);
+		interp_trace(th);
 		method_pushc(th, (ovm_method_t)(th->pc + ofs));
 	    }
             break;
@@ -2951,6 +3088,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
+		interp_trace(th);
                 ovm_str_newc(dst, size, data);
             }
             break;
@@ -2960,6 +3098,7 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
+		interp_trace(th);
                 ovm_str_pushc(th, size, data);
             }
             break;
@@ -2970,7 +3109,9 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_str_newch(dst, size, data, interp_uint32(th));
+		unsigned hash = interp_uint32(th);
+		interp_trace(th);
+                ovm_str_newch(dst, size, data, hash);
             }
             break;
             
@@ -2979,13 +3120,16 @@ static void interp(ovm_thread_t th, ovm_method_t m)
                 unsigned size;
                 const char *data;
                 interp_strval(th, &size, &data);
-                ovm_str_pushch(th, size, data, interp_uint32(th));
+		unsigned hash = interp_uint32(th);
+		interp_trace(th);
+                ovm_str_pushch(th, size, data, hash);
             }
             break;
 
 	case 0x26:
 	    {
 		unsigned expected = interp_uintval(th);
+		interp_trace(th);
 		if (mcfp->argc != expected) {
 		    ovm_except_num_args(th, expected);
 		}
@@ -2993,11 +3137,15 @@ static void interp(ovm_thread_t th, ovm_method_t m)
 	    break;
 
 	case 0x27:
-	    ovm_method_array_arg_push(th, interp_uintval(th));
+	    {
+		unsigned n = interp_uintval(th);
+		interp_trace(th);
+		ovm_method_array_arg_push(th, n);
+	    }
 	    break;
 	    
         default:
-            OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_INVALID_OPCODE, 0);
+            interp_invalid_opcode(th);
         }
     }
 
@@ -3016,7 +3164,7 @@ static inline void method_run(ovm_thread_t th, ovm_inst_t dst, ovm_obj_ns_t ns, 
         (*method->codemethodval)(th, dst, argc, argv);
         break;
     case OVM_INST_TYPE_METHOD:
-        interp(th, method->methodval);
+        interp(th, method->methodval, true);
         break;
     default:
         abort();
@@ -4343,26 +4491,11 @@ static ovm_obj_str_t method_write(ovm_inst_t dst, ovm_inst_t src)
     a[0].size = n;
     a[0].data = q;;
     size += n - 1;
-    Dl_info dlinfo[1];
-    char *buf;
-    if (dladdr(p, dlinfo) == 0 || dlinfo->dli_sname == 0) {
-        n = 32;
-        buf = alloca(n);
-        snprintf(buf, n, "%p", p);
-        n = strlen(buf);
-    } else {
-        n = strlen(dlinfo->dli_sname);
-        buf = alloca(n + 1);
-        char *r;
-        unsigned k;
-        for (r = buf, q = dlinfo->dli_sname, k = n + 1; k > 0; --k, ++q, ++r) {
-            char c = *q;
-            *r = (c == '$') ? '.' : c;
-        }
-    }
-    a[1].size = n + 1;
+    char buf[64];
+    n = symbol_lkup(sizeof(buf), buf, p);
+    a[1].size = n;
     a[1].data = buf;
-    size += n;
+    size += n - 1;
     static const char rpar[] = ")";
     a[2].size = sizeof(rpar);
     a[2].data = rpar;
