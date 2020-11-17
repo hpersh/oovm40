@@ -1008,10 +1008,8 @@ static void except_longjmp(ovm_thread_t th, struct ovm_frame_except *xfr, ovm_in
 }
 
 __attribute__((noreturn))
-static void except_raise2(ovm_thread_t th, ovm_inst_t x, ovm_inst_t m)
+static void except_raise2(ovm_thread_t th, ovm_inst_t x)
 {
-    dict_ats_put(th, ovm_inst_setval_nochk(x), OVM_STR_CONST_HASH(method), m);
-
     struct ovm_frame_except *xfr = th->xfp;
     if (xfr == 0)  except_uncaught(th, x);
     except_longjmp(th, xfr, x);
@@ -1021,7 +1019,7 @@ __attribute__((noreturn))
 void ovm_except_raise(ovm_thread_t th, ovm_inst_t x)
 {
     except_raise1(th);
-    except_raise2(th, x, th->mcfp->method);
+    except_raise2(th, x);
 }
 
 __attribute__((noreturn))
@@ -1046,7 +1044,7 @@ void ovm_except_inv_value(ovm_thread_t th, ovm_inst_t inst)
     ovm_obj_set_t x = except_newc(th, &work[-1], _OVM_STR_CONST("system.invalid-value"));
     dict_ats_put(th, x, OVM_STR_CONST_HASH(value), inst);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1063,7 +1061,7 @@ void ovm_except_no_methodc(ovm_thread_t th, ovm_inst_t recvr, unsigned sel_size,
 
     ovm_stack_free(th, 1);
     
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1076,7 +1074,7 @@ void ovm_except_no_var(ovm_thread_t th, ovm_inst_t var)
     ovm_obj_set_t x = except_newc(th, &work[-1], _OVM_STR_CONST("system.no-variable"));
     dict_ats_put(th, x, OVM_STR_CONST_HASH(name), var);
     
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1094,7 +1092,7 @@ void ovm_except_num_args(ovm_thread_t th, unsigned expected)
 
     ovm_stack_free(th, 1);
     
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 void ovm_method_argc_chk_exact(ovm_thread_t th, unsigned expected)
@@ -1117,7 +1115,7 @@ void ovm_except_num_args_min(ovm_thread_t th, unsigned min)
 
     ovm_stack_free(th, 1);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 void ovm_method_argc_chk_min(ovm_thread_t th, unsigned min)
@@ -1142,7 +1140,7 @@ void ovm_except_num_args_range(ovm_thread_t th, unsigned min, unsigned max)
 
     ovm_stack_free(th, 1);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 void ovm_method_argc_chk_range(ovm_thread_t th, unsigned min, unsigned max)
@@ -1162,7 +1160,7 @@ void ovm_except_no_attr(ovm_thread_t th, ovm_inst_t inst, ovm_inst_t attr)
     dict_ats_put(th, x, OVM_STR_CONST_HASH(instance), inst);
     dict_ats_put(th, x, OVM_STR_CONST_HASH(attribute), attr);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1176,7 +1174,7 @@ void ovm_except_idx_range(ovm_thread_t th, ovm_inst_t inst, ovm_inst_t idx)
     dict_ats_put(th, x, OVM_STR_CONST_HASH(instance), inst);
     dict_ats_put(th, x, OVM_STR_CONST_HASH(index), idx);
     
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1191,7 +1189,7 @@ void ovm_except_idx_range2(ovm_thread_t th, ovm_inst_t inst, ovm_inst_t idx, ovm
     dict_ats_put(th, x, OVM_STR_CONST_HASH(index), idx);
     dict_ats_put(th, x, OVM_STR_CONST_HASH(length), len);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1205,7 +1203,7 @@ void ovm_except_key_not_found(ovm_thread_t th, ovm_inst_t inst, ovm_inst_t key)
     dict_ats_put(th, x, OVM_STR_CONST_HASH(instance), inst);
     dict_ats_put(th, x, OVM_STR_CONST_HASH(key), key);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1219,7 +1217,7 @@ void ovm_except_modify_const(ovm_thread_t th, ovm_inst_t inst, ovm_inst_t key)
     dict_ats_put(th, x, OVM_STR_CONST_HASH(instance), inst);
     dict_ats_put(th, x, OVM_STR_CONST_HASH(key), key);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1241,7 +1239,7 @@ void ovm_except_file_open(ovm_thread_t th, ovm_inst_t filename, ovm_inst_t mode)
 
     ovm_stack_free(th, 1);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1258,7 +1256,7 @@ void ovm_except_module_load(ovm_thread_t th, ovm_inst_t name, unsigned mesg_size
 
     ovm_stack_free(th, 1);
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 __attribute__((noreturn))
@@ -1270,7 +1268,7 @@ void ovm_except_descent_loop(ovm_thread_t th)
 
     except_newc(th, &work[-1], _OVM_STR_CONST("system.descent-loop"));
 
-    except_raise2(th, &work[-1], th->mcfp->method);
+    except_raise2(th, &work[-1]);
 }
 
 /***************************************************************************/
@@ -2854,7 +2852,15 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x04:
+	case 0x04:
+	    {
+		unsigned long long n = interp_uintval(th);
+		interp_trace(th);
+		ovm_stack_clear(th, n);
+	    }
+            break;
+
+        case 0x05:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 ovm_inst_t src = interp_base_ofs(th);
@@ -2863,7 +2869,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x05:
+        case 0x06:
 	    {
 		ovm_inst_t src = interp_base_ofs(th);
 		interp_trace(th);
@@ -2871,7 +2877,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x06:
+        case 0x10:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned sel_size;
@@ -2884,11 +2890,11 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x07:
+        case 0x11:
 	    interp_trace(th);
 	    goto _return;
 
-        case 0x08:
+        case 0x12:
             {
 		interp_trace(th);		
                 struct ovm_frame_mc *mcfp = thread_mcfp(th);
@@ -2896,7 +2902,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
 	    goto _return;
 
-        case 0x09:
+        case 0x20:
 	    {
 		ovm_inst_t var = interp_base_ofs(th);
 		interp_trace(th);
@@ -2904,7 +2910,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x0a:
+        case 0x21:
 	    {
 		ovm_inst_t arg = interp_base_ofs(th);
 		interp_trace(th);
@@ -2912,17 +2918,17 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x0b:
+        case 0x22:
 	    interp_trace(th);
             ovm_except_reraise(th);
             break;
 
-        case 0x0c:
+        case 0x23:
 	    interp_trace(th);
             ovm_frame_except_pop(th, 1);
             break;
 
-        case 0x0d:
+        case 0x24:
 	    {
 		unsigned n = interp_uintval(th);
 		interp_trace(th);
@@ -2930,31 +2936,26 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x0e:
+	case 0x30:
+	case 0x31:
 	    {
 		long long ofs = interp_intval(th);
 		interp_trace(th);
-		th->pc += ofs;
+		if (ovm_inst_boolval(th, th->sp) == (op & 1))  th->pc += ofs;
 	    }
             break;
 
-        case 0x0f:
+	case 0x32:
+	case 0x33:
 	    {
 		long long ofs = interp_intval(th);
 		interp_trace(th);
-		if (ovm_inst_boolval(th, th->sp))  th->pc += ofs;
+		if (ovm_inst_boolval(th, th->sp) == (op & 1))  th->pc += ofs;
+		ovm_stack_free(th, 1);
 	    }
             break;
-            
-        case 0x10:
-	    {
-		long long ofs = interp_intval(th);
-		interp_trace(th);
-		if (!ovm_inst_boolval(th, th->sp))  th->pc += ofs;
-	    }
-            break;
-            
-        case 0x11:
+
+        case 0x34:
 	    {
 		long long ofs = interp_intval(th);
 		interp_trace(th);
@@ -2962,25 +2963,15 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x12:
+	case 0x35:
 	    {
 		long long ofs = interp_intval(th);
 		interp_trace(th);
-		if (ovm_inst_boolval(th, th->sp))  th->pc += ofs;
-		ovm_stack_free(th, 1);
+		th->pc += ofs;
 	    }
             break;
 
-        case 0x13:
-	    {
-		long long ofs = interp_intval(th);
-		interp_trace(th);
-		if (!ovm_inst_boolval(th, th->sp))  th->pc += ofs;
-		ovm_stack_free(th, 1);
-	    }
-            break;
-
-        case 0x14:
+        case 0x40:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned size;
@@ -2992,7 +2983,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
             
-        case 0x15:
+        case 0x41:
             {
                 unsigned size;
                 const char *data;
@@ -3003,7 +2994,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x16:
+        case 0x50:
 	    {
 		ovm_inst_t dst = interp_base_ofs(th);
 		interp_trace(th);
@@ -3011,13 +3002,13 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x17:
+        case 0x51:
 	    interp_trace(th);
             ovm_stack_push_obj(th, 0);
             break;
 
-        case 0x18:
-        case 0x19:
+        case 0x52:
+        case 0x53:
 	    {
 		ovm_inst_t dst = interp_base_ofs(th);
 		interp_trace(th);
@@ -3025,13 +3016,13 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
             
-        case 0x1a:
-        case 0x1b:
+        case 0x54:
+        case 0x55:
 	    interp_trace(th);
             ovm_bool_pushc(th, op & 1);
             break;
             
-        case 0x1c:
+        case 0x56:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
 		ovm_intval_t val = interp_intval(th);
@@ -3040,7 +3031,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x1d:
+        case 0x57:
 	    {
 		ovm_intval_t val = interp_intval(th);
 		interp_trace(th);
@@ -3048,7 +3039,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
              
-        case 0x1e:
+        case 0x58:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
 		ovm_floatval_t val = interp_floatval(th);
@@ -3057,7 +3048,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x1f:
+        case 0x59:
 	    {
 		ovm_floatval_t val = interp_floatval(th);
 		interp_trace(th);
@@ -3065,7 +3056,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x20:
+        case 0x5a:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
 		long long ofs = interp_intval(th);
@@ -3074,7 +3065,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-        case 0x21:
+        case 0x5b:
 	    {
 		long long ofs = interp_intval(th);
 		interp_trace(th);
@@ -3082,7 +3073,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
             break;
 
-        case 0x22:
+        case 0x5c:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned size;
@@ -3093,7 +3084,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
             
-        case 0x23:
+        case 0x5d:
             {
                 unsigned size;
                 const char *data;
@@ -3103,7 +3094,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
             
-        case 0x24:
+        case 0x5e:
             {
                 ovm_inst_t dst = interp_base_ofs(th);
                 unsigned size;
@@ -3115,7 +3106,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
             
-        case 0x25:
+        case 0x5f:
             {
                 unsigned size;
                 const char *data;
@@ -3126,7 +3117,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
             }
             break;
 
-	case 0x26:
+	case 0x70:
 	    {
 		unsigned expected = interp_uintval(th);
 		interp_trace(th);
@@ -3136,7 +3127,7 @@ static void interp(ovm_thread_t th, ovm_method_t m, bool tracef)
 	    }
 	    break;
 
-	case 0x27:
+	case 0x71:
 	    {
 		unsigned n = interp_uintval(th);
 		interp_trace(th);
@@ -7491,7 +7482,7 @@ CM_DECL(raise)
     ovm_inst_of(&work[-1], recvr);
     if (ovm_inst_classval_nochk(&work[-1]) != OVM_CL_EXCEPTION)  ovm_except_inv_value(th, recvr);
     except_raise1(th);
-    except_raise2(th, recvr, th->mcfp->prev->method);
+    except_raise2(th, recvr);
 }
 
 CM_DECL(reraise)

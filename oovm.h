@@ -875,6 +875,26 @@ static inline ovm_inst_t ovm_stack_free_alloc(ovm_thread_t th, unsigned size_fre
     return (p);
 }
 
+/**
+ * \brief Clear out instances at top of stack
+ *
+ * Set top N entries of instance stack to nil.
+ *
+ * \param[in] th Thread
+ * \param[in] size Number of instances to clear
+ *
+ * \return Nothing
+ *
+ * \note Giving a number of instances larger than the thread's current stack size will cause
+ * the thread to exit, with the exit code OVM_THREAD_FATAL_STACK_UNDERFLOW.
+ */
+static inline void ovm_stack_clear(ovm_thread_t th, unsigned size)
+{
+    ovm_inst_t p = th->sp, q = p + size;
+    if (q > th->stack_top)  OVM_THREAD_FATAL(th, OVM_THREAD_FATAL_STACK_UNDERFLOW, 0);
+    for (; p < q; ++p)  ovm_inst_assign_obj(p, 0);
+}
+
 /**@}*/
 
 /**

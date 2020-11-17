@@ -29,6 +29,9 @@ def gen_stack_free(outf, nd):
 def gen_stack_free_alloc(outf, nd):
     outf.write('ovm_stack_free_alloc(th, {}, {});\n'.format(nd.get('size_free'), nd.get('size_alloc')))
 
+def gen_stack_clear(outf, nd):
+    outf.write('ovm_stack_clear(th, {});\n'.format(nd.get('size')))
+
 def gen_method_call(outf, nd):
     outf.write('ovm_method_callsch(th, {}, _OVM_STR_CONST_HASH("{}"), {});\n'.format(gen_src_dst(nd.get('dst')), nd.get('sel'), nd.get('argc')))
 

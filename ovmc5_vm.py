@@ -133,110 +133,113 @@ def gen_stack_alloc(nd):
 def gen_stack_free_alloc(nd):
     code_append(nd, [0x03] + gen_uint(int(nd.get('size_free'))) + gen_uint(int(nd.get('size_alloc'))))
 
+def gen_stack_clear(nd):
+    code_append(nd, [0x04] + gen_uint(int(nd.get('size'))))
+
 def gen_inst_assign(nd):
-    code_append(nd, [0x04] + gen_src_dst(nd.get('dst')) + gen_src_dst(nd.get('src')))
+    code_append(nd, [0x05] + gen_src_dst(nd.get('dst')) + gen_src_dst(nd.get('src')))
     
 def gen_stack_push(nd):
-    code_append(nd, [0x05] + gen_src_dst(nd.get('src')))
+    code_append(nd, [0x06] + gen_src_dst(nd.get('src')))
     
 def gen_method_call(nd):
-    code_append(nd, [0x06] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('sel')) + gen_uint(int(nd.get('argc'))))
+    code_append(nd, [0x10] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('sel')) + gen_uint(int(nd.get('argc'))))
 
 def gen_ret(nd):
-    code_append(nd, [0x07])
+    code_append(nd, [0x11])
 
 def gen_retd(nd):
-    code_append(nd, [0x08])
+    code_append(nd, [0x12])
 
 def gen_except_push(nd):
-    code_append(nd, [0x09] + gen_src_dst(nd.get('var')))
+    code_append(nd, [0x20] + gen_src_dst(nd.get('var')))
 
 def gen_except_raise(nd):
-    code_append(nd, [0x0a] + gen_src_dst(nd.get('src')))
+    code_append(nd, [0x21] + gen_src_dst(nd.get('src')))
  
 def gen_except_reraise(nd):
-    code_append(nd, [0x0b])
+    code_append(nd, [0x22])
 
 def gen_except_pop(nd):
     n = int(nd.get('cnt'))
     if n == 1:
-        code_append(nd, [0x0c])
+        code_append(nd, [0x23])
         return
-    code_append(nd, [0x0d] + gen_uint(n))
-
-def gen_jmp(nd):
-    code_append(nd, symbol_ref_add([0x0e], nd.get('label')))
-
-def gen_jt(nd):
-    code_append(nd, symbol_ref_add([0x0f], nd.get('label')))
+    code_append(nd, [0x24] + gen_uint(n))
 
 def gen_jf(nd):
-    code_append(nd, symbol_ref_add([0x10], nd.get('label')))
+    code_append(nd, symbol_ref_add([0x30], nd.get('label')))
 
-def gen_jx(nd):
-    code_append(nd, symbol_ref_add([0x11], nd.get('label')))
-
-def gen_popjt(nd):
-    code_append(nd, symbol_ref_add([0x12], nd.get('label')))
+def gen_jt(nd):
+    code_append(nd, symbol_ref_add([0x31], nd.get('label')))
 
 def gen_popjf(nd):
-    code_append(nd, symbol_ref_add([0x13], nd.get('label')))
+    code_append(nd, symbol_ref_add([0x32], nd.get('label')))
+
+def gen_popjt(nd):
+    code_append(nd, symbol_ref_add([0x33], nd.get('label')))
+
+def gen_jx(nd):
+    code_append(nd, symbol_ref_add([0x34], nd.get('label')))
+
+def gen_jmp(nd):
+    code_append(nd, symbol_ref_add([0x35], nd.get('label')))
 
 def gen_environ_at(nd):
-    code_append(nd, [0x14] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('name')))
+    code_append(nd, [0x40] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('name')))
 
 def gen_environ_at_push(nd):
-    code_append(nd, [0x15] + gen_str_hash(nd.get('name')))
+    code_append(nd, [0x41] + gen_str_hash(nd.get('name')))
 
 def gen_nil_assign(nd):
-    code_append(nd, [0x16] + gen_src_dst(nd.get('dst')))
+    code_append(nd, [0x50] + gen_src_dst(nd.get('dst')))
 
 def gen_nil_push(nd):
-    code_append(nd, [0x17])
+    code_append(nd, [0x51])
 
 def gen_bool_newc(nd):
-    code_append(nd, [0x19 if nd.get('val') == '#true' else  0x18] + gen_src_dst(nd.get('dst')))
+    code_append(nd, [0x53 if nd.get('val') == '#true' else  0x52] + gen_src_dst(nd.get('dst')))
 
 def gen_bool_pushc(nd):
-    code_append(nd, [0x1b if nd.get('val') == '#true' else 0x1a])
+    code_append(nd, [0x55 if nd.get('val') == '#true' else 0x54])
 
 str_to_int_ldrs_to_base = {'0x': 16, '0b': 2}
     
 def gen_int_newc(nd):
-    code_append(nd, [0x1c] + gen_src_dst(nd.get('dst')) + gen_int(int(nd.get('val'), 0)))
+    code_append(nd, [0x56] + gen_src_dst(nd.get('dst')) + gen_int(int(nd.get('val'), 0)))
 
 def gen_int_pushc(nd):
-    code_append(nd, [0x1d] + gen_int(int(nd.get('val'), 0)))
+    code_append(nd, [0x57] + gen_int(int(nd.get('val'), 0)))
 
 def gen_float_newc(nd):
-    code_append(nd, [0x1e] + gen_src_dst(nd.get('dst')) + gen_str(float(nd.get('val')).hex()))
+    code_append(nd, [0x58] + gen_src_dst(nd.get('dst')) + gen_str(float(nd.get('val')).hex()))
 
 def gen_float_pushc(nd):
-    code_append(nd, [0x1f] + gen_str(float(nd.get('val')).hex()))
+    code_append(nd, [0x59] + gen_str(float(nd.get('val')).hex()))
 
 def gen_method_newc(nd):
-    code_append(nd, symbol_ref_add([0x20] + gen_src_dst(nd.get('dst')), nd.get('func')))
+    code_append(nd, symbol_ref_add([0x5a] + gen_src_dst(nd.get('dst')), nd.get('func')))
 
 def gen_method_pushc(nd):
-    code_append(nd, symbol_ref_add([0x21], nd.get('func')))
+    code_append(nd, symbol_ref_add([0x5b], nd.get('func')))
     
 def gen_str_newc(nd):
-    code_append(nd, [0x22] + gen_src_dst(nd.get('dst')) + gen_str(nd.get('val')))
+    code_append(nd, [0x5c] + gen_src_dst(nd.get('dst')) + gen_str(nd.get('val')))
 
 def gen_str_pushc(nd):
-    code_append(nd, [0x23] + gen_str(nd.get('val')))
+    code_append(nd, [0x5d] + gen_str(nd.get('val')))
 
 def gen_str_newch(nd):
-    code_append(nd, [0x24] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('val')))
+    code_append(nd, [0x5e] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('val')))
 
 def gen_str_pushch(nd):
-    code_append(nd, [0x25] + gen_str_hash(nd.get('val')))
+    code_append(nd, [0x5f] + gen_str_hash(nd.get('val')))
 
 def gen_argc_chk(nd):
-    code_append(nd, [0x26] + gen_uint(int(nd.get('argc'))))
+    code_append(nd, [0x70] + gen_uint(int(nd.get('argc'))))
 
 def gen_array_arg_push(nd):
-    code_append(nd, [0x27] + gen_uint(int(nd.get('argc')) - 1))
+    code_append(nd, [0x71] + gen_uint(int(nd.get('argc')) - 1))
     
 def gen_label(nd):
     symbol_add(nd.get('name'))

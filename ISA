@@ -48,70 +48,72 @@ nnn..n is big-endian
 
 03     stack_free_alloc	nfree:len nalloc:len
 
-04     inst_assign	dst:base+ofs src:base+ofs
+04     stack_clear	n:len
 
-05     stack_push	src:base+ofs
+05     inst_assign	dst:base+ofs src:base+ofs
 
-06     method_callc	dst:base+ofs sel:str sel_hash:uint32 argc:len
+06     stack_push	src:base+ofs
 
-07     ret
+10     method_callc	dst:base+ofs sel:str sel_hash:uint32 argc:len
 
-08     retd		# Return default, assign &argv[0] to dst and return
+11     ret
 
-09     except_push	var:base+ofs
+12     retd		# Return default, assign &argv[0] to dst and return
 
-0a     except_raise	inst:base+ofs
+20     except_push	var:base+ofs
 
-0b     except_reraise
+21     except_raise	inst:base+ofs
 
-0c     except_pop
+22     except_reraise
 
-0d     except_popn	n:len
+23     except_pop
 
-0e     jmp		ofs:ofs
+24     except_popn	n:len
 
-0f     jt		ofs:ofs
+30     jf 		ofs:ofs
 
-10     jf		ofs:ofs
+31     jt		ofs:ofs
 
-11     jx		ofs:ofs
+32     iff		ofs:ofs
 
-12     ift		ofs:ofs
+33     ift		ofs:ofs
 
-13     iff		ofs:ofs
+34     jx		ofs:ofs
 
-14     env_atc  	dst:base+ofs name:str name_hash:uint32
+35     jmp		ofs:ofs
 
-15     env_atc_push	name:str name_hash:uint32
+40     env_atc  	dst:base+ofs name:str name_hash:uint32
 
-16     nil_new		dst:base+ofs
+41     env_atc_push	name:str name_hash:uint32
 
-17     nil_push
+50     nil_new		dst:base+ofs
 
-18,19  bool_newc	dst:base+ofs
+51     nil_push
 
-1a,1b  bool_pushc
+52,53  bool_newc	dst:base+ofs
 
-1c     int_newc		dst:base+ofs val:val
+54,55  bool_pushc
 
-1d     int_pushc	val:val
+56     int_newc		dst:base+ofs val:val
 
-1e     float_newc	dst:base+ofs val:str
+57     int_pushc	val:val
 
-1f     float_pushc	val:str
+58     float_newc	dst:base+ofs val:str
 
-20     method_newc	dst:base+ofs addr:ofs
+59     float_pushc	val:str
 
-21     method_pushc	addr:ofs
+5a     method_newc	dst:base+ofs addr:ofs
 
-22     str_newc		dst:base+ofs str:str
+5b     method_pushc	addr:ofs
 
-23     str_pushc	str:str
+5c     str_newc		dst:base+ofs str:str
 
-24     str_newc_hash	dst:base+ofs str:str str_hash:uint32
+5d     str_pushc	str:str
 
-25     str_pushc_hash	str:str str_hash:uint32
+5e     str_newc_hash	dst:base+ofs str:str str_hash:uint32
 
-26     argc_chk		n:uval
+5f     str_pushc_hash	str:str str_hash:uint32
 
-27     array_arg_push	min:uval
+70     argc_chk		n:uval
+
+71     array_arg_push	min:uval

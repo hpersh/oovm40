@@ -29,7 +29,12 @@ def optim(m):
             last.set('size', str(int(last.get('size')) + int(s.get('size'))))
             continue
         if s.tag == 'stack_alloc' and last is not None and last.tag == 'stack_free':
-            last = et.Element('stack_free_alloc', attrib={'size_free': last.get('size'), 'size_alloc': s.get('size')})
+            size_free = last.get('size')
+            size_alloc = s.get('size')
+            if size_alloc == size_free:
+                last = et.Element('stack_clear', attrib={'size': size_alloc})
+            else:
+                last = et.Element('stack_free_alloc', attrib={'size_free': last.get('size'), 'size_alloc': s.get('size')})
             continue
         if s.tag == 'stack_alloc' and last is not None and last.tag == 'stack_free_alloc':
             last.set('size_alloc', str(int(last.get('size_alloc')) + int(s.get('size'))))
