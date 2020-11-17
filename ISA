@@ -117,3 +117,5 @@ nnn..n is big-endian
 70     argc_chk		n:uval
 
 71     array_arg_push	min:uval
+
+80     debug		len:uint8 ...

@@ -211,6 +211,7 @@ Return the value for the given class variable; raise an exception of type
 - Parsing strings into objects - DONE
 - Global (module-level) functions - already supported
   - Assignment to module variable, of anonymous function
+- VM instructions - DONE
 
 - Complete test suite
 - Performace
@@ -218,8 +219,8 @@ Return the value for the given class variable; raise an exception of type
 - Minor code-generation optimizations
   * Jumps to jumps
   * Straight-line, non-iterated code need not pre-allocate locals
-- VM instructions
 - More string formatting features: field width, justification, etc.
 - Syntactic sugar for setting global (i.e. module-level) variables
 - Static builds
 - Use autoconfig / automake
+- Optimize forward references in VM

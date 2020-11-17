@@ -12,6 +12,8 @@ import xml.etree.ElementTree as et
 
 outf = None
 
+line_num = 0
+
 def copy_node(nd):
     return et.Element(nd.tag, attrib = nd.attrib)
 
@@ -32,10 +34,10 @@ def num_from_node(nd):
     assert(False)
 
 def int_node(val):
-    return et.Element('int', attrib = {'val': str(val)})
+    return et.Element('int', attrib = {'val': str(val), 'line': line_num})
 
 def float_node(val):
-    return et.Element('float', attrib = {'val': str(val)})
+    return et.Element('float', attrib = {'val': str(val), 'line': line_num})
 
 def node_from_num(val):
     t = type(val)
@@ -133,7 +135,7 @@ def simp_sub(nd):
     if num_node_eq(a, 0) or num_node_eq(a, 0.0):
         if node_is_num(b):
             return node_from_num(-num_from_node(b))
-        return et.Element('minus').append(b)
+        return et.Element('minus', attrib={'line': line_num}).append(b)
     return nd
 
 def simp_mul(nd):
@@ -241,6 +243,10 @@ def parse_node_default(parent, nd):
     parent.append(nd2)
 
 def parse_node(parent, nd):
+    line_num_ = nd.get('line')
+    if line_num_ is not None:
+        global line_num
+        line_num = line_num_
     f = 'parse_' + nd.tag
     (globals().get(f, parse_node_default))(parent, nd)
 

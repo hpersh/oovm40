@@ -258,14 +258,17 @@ def listing_node(nd):
     if t == 'func':
         sys.stdout.write('\n{}:'.format(nd.get('name')))
     else:
-        sys.stdout.write(t)
-        for a in nd.attrib.items():
-            if a[0] in ['ofs', 'len']:
+        sys.stdout.write('\t{}'.format(t))
+        sep = '\t'
+        for k in ['dst', 'src', 'sel', 'argc', 'name', 'label', 'func', 'val', 'size', 'size_free', 'size_alloc']:
+            v = nd.attrib.get(k)
+            if v is None:
                 continue
-            sys.stdout.write(' {}={}'.format(a[0], a[1]))
+            sys.stdout.write('{}{}'.format(sep, v))
+            sep = ','
     ofs = int(nd.get('ofs'))
     n = int(nd.get('len'))
-    sys.stdout.write('\n\t{:08x} '.format(ofs))
+    sys.stdout.write('\n{:08x} '.format(ofs))
     while n > 0:
         sys.stdout.write('{:02x} '.format(code[ofs]))
         ofs += 1
@@ -290,7 +293,7 @@ def output_write(nd):
         i += 1
         k = (k + 1) & 0x07;
     sys.stdout.write('\n};\n')
-    sys.stdout.write('/*\nListing\n\n')
+    sys.stdout.write('/*\nListing\n')
     listing_dump(nd)
     sys.stdout.write('*/\n')
     sys.stdout.write('/*\nSymbol table\n\n')

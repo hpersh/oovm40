@@ -10,15 +10,15 @@ anon = et.Element('anon')
 body = et.Element('body')
 init = None
 
-
 class Struct:
     def __init__(self, d = {}):
         self.__dict__ = d
 
     def __repr__(self):
         return str(self.__dict__)
-    
 
+line_num = 0
+    
 cstack = []
 cstack_lvl = 0
 
@@ -201,110 +201,110 @@ def dst_adj(dst, n):
 def gen_stack_alloc(outf, n):
     if n == 0:
         return
-    et.SubElement(outf, 'stack_alloc', attrib={'size': str(n)})
+    et.SubElement(outf, 'stack_alloc', attrib={'size': str(n), 'line': line_num})
     
 def gen_stack_free(outf, n):
     if n == 0:
         return
-    et.SubElement(outf, 'stack_free', attrib={'size': str(n)})
+    et.SubElement(outf, 'stack_free', attrib={'size': str(n), 'line': line_num})
 
 def gen_stack_push(outf, src):
-    et.SubElement(outf, 'stack_push', attrib={'src': src})
+    et.SubElement(outf, 'stack_push', attrib={'src': src, 'line': line_num})
 
 def gen_nil(outf, dst):
     if dst == 'push':
-        et.SubElement(outf, 'nil_push')
+        et.SubElement(outf, 'nil_push', attrib={'line': line_num})
         return
-    et.SubElement(outf, 'nil_assign', attrib={'dst': dst})    
+    et.SubElement(outf, 'nil_assign', attrib={'dst': dst, 'line': line_num})    
 
 def gen_bool_newc(outf, dst, val):
     if dst == 'push':
-        et.SubElement(outf, 'bool_pushc', attrib={'val': str(val)})    
+        et.SubElement(outf, 'bool_pushc', attrib={'val': str(val), 'line': line_num})    
         return
-    et.SubElement(outf, 'bool_newc', attrib={'dst': dst, 'val': str(val)})    
+    et.SubElement(outf, 'bool_newc', attrib={'dst': dst, 'val': str(val), 'line': line_num})    
 
 def gen_int_newc(outf, dst, val):
     if dst == 'push':
-        et.SubElement(outf, 'int_pushc', attrib={'val': str(val)})    
+        et.SubElement(outf, 'int_pushc', attrib={'val': str(val), 'line': line_num})    
         return
-    et.SubElement(outf, 'int_newc', attrib={'dst': dst, 'val': str(val)})    
+    et.SubElement(outf, 'int_newc', attrib={'dst': dst, 'val': str(val), 'line': line_num})
 
 def gen_float_newc(outf, dst, val):
     if dst == 'push':
-        et.SubElement(outf, 'float_pushc', attrib={'val': str(val)})    
+        et.SubElement(outf, 'float_pushc', attrib={'val': str(val), 'line': line_num})
         return
-    et.SubElement(outf, 'float_newc', attrib={'dst': dst, 'val': str(val)})    
+    et.SubElement(outf, 'float_newc', attrib={'dst': dst, 'val': str(val), 'line': line_num})
 
 def gen_method_newc(outf, dst, funcname):
     if dst == 'push':
-        et.SubElement(outf, 'method_pushc', attrib={'func': funcname})    
+        et.SubElement(outf, 'method_pushc', attrib={'func': funcname, 'line': line_num})
         return
-    et.SubElement(outf, 'method_newc', attrib={'dst': dst, 'func': funcname})    
+    et.SubElement(outf, 'method_newc', attrib={'dst': dst, 'func': funcname, 'line': line_num})
 
 def gen_str_newc(outf, dst, val):
     if dst == 'push':
-        et.SubElement(outf, 'str_pushc', attrib={'val': val})    
+        et.SubElement(outf, 'str_pushc', attrib={'val': val, 'line': line_num})
         return
-    et.SubElement(outf, 'str_newc', attrib={'dst': dst, 'val': val})    
+    et.SubElement(outf, 'str_newc', attrib={'dst': dst, 'val': val, 'line': line_num})
 
 def gen_str_newch(outf, dst, val):
     if dst == 'push':
-        et.SubElement(outf, 'str_pushch', attrib={'val': val})    
+        et.SubElement(outf, 'str_pushch', attrib={'val': val, 'line': line_num})
         return
-    et.SubElement(outf, 'str_newch', attrib={'dst': dst, 'val': val})    
+    et.SubElement(outf, 'str_newch', attrib={'dst': dst, 'val': val, 'line': line_num})
 
 def gen_inst_assign(outf, dst, src):
-    et.SubElement(outf, 'inst_assign', attrib={'dst': dst, 'src': src})
+    et.SubElement(outf, 'inst_assign', attrib={'dst': dst, 'src': src, 'line': line_num})
 
 def gen_method_call(outf, dst, sel, argc):
-    et.SubElement(outf, 'method_call', attrib={'dst': dst, 'sel': sel, 'argc': str(argc)})
+    et.SubElement(outf, 'method_call', attrib={'dst': dst, 'sel': sel, 'argc': str(argc), 'line': line_num})
 
 def gen_environ_at(outf, dst, nm):
     if dst == 'push':
-        et.SubElement(outf, 'environ_at_push', attrib={'name': nm})
+        et.SubElement(outf, 'environ_at_push', attrib={'name': nm, 'line': line_num})
         return
-    et.SubElement(outf, 'environ_at', attrib={'dst': dst, 'name': nm})
+    et.SubElement(outf, 'environ_at', attrib={'dst': dst, 'name': nm, 'line': line_num})
 
 def gen_label(outf, label):
-    et.SubElement(outf, 'label', attrib={'name': label})
+    et.SubElement(outf, 'label', attrib={'name': label, 'line': line_num})
     
 def gen_jmp(outf, label):
-    et.SubElement(outf, 'jmp', attrib={'label': label})
+    et.SubElement(outf, 'jmp', attrib={'label': label, 'line': line_num})
 
 def gen_jt(outf, src, label):
-    et.SubElement(outf, 'jt', attrib={'src': src, 'label': label})
+    et.SubElement(outf, 'jt', attrib={'src': src, 'label': label, 'line': line_num})
     
 def gen_jf(outf, src, label):
-    et.SubElement(outf, 'jf', attrib={'src': src, 'label': label})
+    et.SubElement(outf, 'jf', attrib={'src': src, 'label': label, 'line': line_num})
     
 def gen_jx(outf, label):
-    et.SubElement(outf, 'jx', attrib={'label': label})
+    et.SubElement(outf, 'jx', attrib={'label': label, 'line': line_num})
     
 def gen_popjt(outf, label):
-    et.SubElement(outf, 'popjt', attrib={'label': label})
+    et.SubElement(outf, 'popjt', attrib={'label': label, 'line': line_num})
     
 def gen_popjf(outf, label):
-    et.SubElement(outf, 'popjf', attrib={'label': label})
+    et.SubElement(outf, 'popjf', attrib={'label': label, 'line': line_num})
     
 def gen_return(outf):
-    et.SubElement(outf, 'ret')
+    et.SubElement(outf, 'ret', attrib={'line': line_num})
 
 def gen_retd(outf):
-    et.SubElement(outf, 'retd')
+    et.SubElement(outf, 'retd', attrib={'line': line_num})
 
 def gen_except_raise(outf, src):
-    et.SubElement(outf, 'except_raise', attrib={'src': src})
+    et.SubElement(outf, 'except_raise', attrib={'src': src, 'line': line_num})
 
 def gen_except_push(outf, var):
-    et.SubElement(outf, 'except_push', attrib={'var': var})
+    et.SubElement(outf, 'except_push', attrib={'var': var, 'line': line_num})
     
 def gen_except_pop(outf, cnt):
     if cnt == 0:
         return
-    et.SubElement(outf, 'except_pop', attrib={'cnt': str(cnt)})
+    et.SubElement(outf, 'except_pop', attrib={'cnt': str(cnt), 'line': line_num})
     
 def gen_except_reraise(outf):
-    et.SubElement(outf, 'except_reraise')
+    et.SubElement(outf, 'except_reraise', attrib={'line': line_num})
 
 def parse_nil(outf, dst, nd):
     gen_nil(outf, dst)
@@ -907,7 +907,7 @@ def method_func_name(nm):
     return modname + '$' + result
 
 def __parse_method(outf, dst, nm, funcname, args, body):
-    x = et.SubElement(outf, 'func', attrib={'name': funcname, 'argc': str(len(args)), 'visibility': 'private'})
+    x = et.SubElement(outf, 'func', attrib={'name': funcname, 'argc': str(len(args)), 'visibility': 'private', 'line': line_num})
     method_fr = method_push(x, funcname)
     block_fr = block_push()
     v = {}
@@ -1088,7 +1088,10 @@ def parse_module(outf, dst, nd):
     gen_retd(init)
 
 def parse_node(outf, dst, nd):
-    outf.append(et.Comment(' Line {} '.format(nd.get('line'))))
+    line_num_ = nd.get('line')
+    if line_num_ is not None:
+        global line_num
+        line_num = line_num_
     exec('parse_' + nd.tag + '(outf, dst, nd)')    
 
 def process_file(infile):
