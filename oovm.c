@@ -2718,7 +2718,7 @@ static unsigned symbol_lkup(unsigned bufsize, char *buf, void *addr)
 	*p = (c == '$') ? '.' : c;
     }
     char obuf[20];
-    if (p == dlinfo->dli_saddr) {
+    if (addr == dlinfo->dli_saddr) {
 	obuf[0] = 0;
     } else {
 	snprintf(obuf, sizeof(obuf), "+0x%lx", (unsigned char *) addr - (unsigned char *) dlinfo->dli_saddr);
@@ -2752,7 +2752,7 @@ static ovm_inst_t interp_base_ofs(ovm_thread_t th)
     case 0:
         if (ofs < 0)  interp_invalid_opcode(th);
         result = th->sp + ofs;
-        if (result >= mcfp->bp)  interp_invalid_opcode(th);
+        if (result >= th->stack_top)  interp_invalid_opcode(th);
         break;
     case 0x08:
         if (ofs >= 0)  interp_invalid_opcode(th);
