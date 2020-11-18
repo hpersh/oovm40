@@ -111,18 +111,19 @@ def gen_ref_ofs(to, from_):
 def symbol_add(nm):
     assert nm not in symbols_dict
     symbols_dict[nm] = cur_loc
-    for r in symbol_refs_dict.get(nm, []):
+    for r, _ in symbol_refs_dict.get(nm, []):
         code_write(r, gen_ref_ofs(cur_loc, r))
 
 def symbol_ref_add(li, nm):
     r = cur_loc + len(li)
-    symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [r]
-    return li + (gen_ref_ofs(symbols_dict[nm], r) if nm in symbols_dict else 9 * [0])
+    ofs = gen_ref_ofs(symbols_dict[nm], r) if nm in symbols_dict else 9 * [0]
+    symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [(r, len(ofs))]
+    return li + ofs
 
 def symbols_dump():
     for s, ofs in sorted(symbols_dict.items(), key=lambda x: x[1]):
         print '{}: 0x{:08x}'.format(s, ofs)
-        print '\trefs: {}'.format(['0x{:08x}'.format(r) for r in symbol_refs_dict.get(s, [])])
+        print '\trefs: {}'.format(['0x{:08x}'.format(r) for r, _ in symbol_refs_dict.get(s, [])])
         
 def gen_stack_free(nd):
     code_append(nd, [0x01] + gen_uint(int(nd.get('size'))))
