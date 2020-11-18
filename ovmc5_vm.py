@@ -98,8 +98,8 @@ def code_append(nd, li):
     nd.set('ofs', str(cur_loc))
     nd.set('len', str(n))
     cur_loc += n
-        
-def gen_jmp_ofs(to, from_):
+
+def gen_ref_ofs(to, from_):
     n = 1
     while True:
         ofs = gen_int(to - (from_ + n))
@@ -111,18 +111,18 @@ def gen_jmp_ofs(to, from_):
 def symbol_add(nm):
     assert nm not in symbols_dict
     symbols_dict[nm] = cur_loc
-    for x in symbol_refs_dict.get(nm, []):
-        code_write(x, gen_jmp_ofs(cur_loc, x))
+    for r in symbol_refs_dict.get(nm, []):
+        code_write(r, gen_ref_ofs(cur_loc, r))
 
 def symbol_ref_add(li, nm):
-    a = cur_loc + len(li)
-    symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [a]
-    return li + (gen_jmp_ofs(symbols_dict[nm], a) if nm in symbols_dict else 9 * [0])
+    r = cur_loc + len(li)
+    symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [r]
+    return li + (gen_ref_ofs(symbols_dict[nm], r) if nm in symbols_dict else 9 * [0])
 
 def symbols_dump():
-    for s in sorted(symbols_dict.items(), key=lambda x: x[1]):
-        print '{}: 0x{:08x}'.format(s[0], s[1])
-        print '\trefs: {}'.format(['0x{:08x}'.format(x) for x in symbol_refs_dict.get(s[0], [])])
+    for s, ofs in sorted(symbols_dict.items(), key=lambda x: x[1]):
+        print '{}: 0x{:08x}'.format(s, ofs)
+        print '\trefs: {}'.format(['0x{:08x}'.format(r) for r in symbol_refs_dict.get(s, [])])
         
 def gen_stack_free(nd):
     code_append(nd, [0x01] + gen_uint(int(nd.get('size'))))
