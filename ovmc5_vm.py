@@ -95,7 +95,7 @@ def code_append(nd, li):
     code += li
     n = len(li)
     global cur_loc
-    nd.set('len', str(n))
+    nd.set('len', n)
     cur_loc += n
 
 def code_delete(ofs, n):
@@ -270,7 +270,7 @@ def refs_fixup():
                 continue
             code_delete(r + n, xs)
             refs_dict[r][1] = n
-            nd.set('len', str(int(nd.get('len')) - xs))
+            nd.set('len', nd.get('len') - xs)
             againf = True
             # Adjust all symbols above shuffle point
             for s, ofs in symbols_dict.items():
@@ -301,7 +301,7 @@ def listing_node(nd):
                 continue
             sys.stdout.write('{}{}'.format(sep, v))
             sep = ','
-    n = int(nd.get('len'))
+    n = nd.get('len')
     global listing_ofs
     sys.stdout.write('\n{:08x} '.format(listing_ofs))
     while n > 0:
