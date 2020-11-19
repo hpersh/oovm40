@@ -212,6 +212,7 @@ Return the value for the given class variable; raise an exception of type
 - Global (module-level) functions - already supported
   - Assignment to module variable, of anonymous function
 - VM instructions - DONE
+- Optimize forward references in VM - DONE
 
 - Complete test suite
 - Performace
@@ -223,4 +224,3 @@ Return the value for the given class variable; raise an exception of type
 - Syntactic sugar for setting global (i.e. module-level) variables
 - Static builds
 - Use autoconfig / automake
-- Optimize forward references in VM

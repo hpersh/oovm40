@@ -82,7 +82,7 @@ def gen_src_dst(src_dst):
 code = []
 cur_loc = 0
 symbols_dict = {}
-symbol_refs_dict = {}
+refs_dict = {}
 
 def code_write(ofs, li):
     n = len(li)
@@ -95,10 +95,13 @@ def code_append(nd, li):
     code += li
     n = len(li)
     global cur_loc
-    nd.set('ofs', str(cur_loc))
     nd.set('len', str(n))
     cur_loc += n
 
+def code_delete(ofs, n):
+    global code
+    code = code[0:ofs] + code[(ofs + n):]
+    
 def gen_ref_ofs(to, from_):
     n = 1
     while True:
@@ -111,19 +114,20 @@ def gen_ref_ofs(to, from_):
 def symbol_add(nm):
     assert nm not in symbols_dict
     symbols_dict[nm] = cur_loc
-    for r, _ in symbol_refs_dict.get(nm, []):
-        code_write(r, gen_ref_ofs(cur_loc, r))
 
-def symbol_ref_add(li, nm):
+def symbol_ref_add(nd, li, s):
     r = cur_loc + len(li)
-    ofs = gen_ref_ofs(symbols_dict[nm], r) if nm in symbols_dict else 9 * [0]
-    symbol_refs_dict[nm] = symbol_refs_dict.get(nm, []) + [(r, len(ofs))]
+    ofs = gen_ref_ofs(symbols_dict[s], r) if s in symbols_dict else 9 * [0]
+    refs_dict[r] = [s, len(ofs), nd]
     return li + ofs
 
 def symbols_dump():
+    d = {}
+    for r, li in refs_dict.items():
+        d.setdefault(li[0], []).append(r)
     for s, ofs in sorted(symbols_dict.items(), key=lambda x: x[1]):
         print '{}: 0x{:08x}'.format(s, ofs)
-        print '\trefs: {}'.format(['0x{:08x}'.format(r) for r, _ in symbol_refs_dict.get(s, [])])
+        print '\trefs: {}'.format(', '.join(['0x{:08x}'.format(r) for r in sorted(d.get(s, []))]))
         
 def gen_stack_free(nd):
     code_append(nd, [0x01] + gen_uint(int(nd.get('size'))))
@@ -169,22 +173,22 @@ def gen_except_pop(nd):
     code_append(nd, [0x24] + gen_uint(n))
 
 def gen_jf(nd):
-    code_append(nd, symbol_ref_add([0x30], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x30], nd.get('label')))
 
 def gen_jt(nd):
-    code_append(nd, symbol_ref_add([0x31], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x31], nd.get('label')))
 
 def gen_popjf(nd):
-    code_append(nd, symbol_ref_add([0x32], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x32], nd.get('label')))
 
 def gen_popjt(nd):
-    code_append(nd, symbol_ref_add([0x33], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x33], nd.get('label')))
 
 def gen_jx(nd):
-    code_append(nd, symbol_ref_add([0x34], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x34], nd.get('label')))
 
 def gen_jmp(nd):
-    code_append(nd, symbol_ref_add([0x35], nd.get('label')))
+    code_append(nd, symbol_ref_add(nd, [0x35], nd.get('label')))
 
 def gen_environ_at(nd):
     code_append(nd, [0x40] + gen_src_dst(nd.get('dst')) + gen_str_hash(nd.get('name')))
@@ -219,10 +223,10 @@ def gen_float_pushc(nd):
     code_append(nd, [0x59] + gen_str(float(nd.get('val')).hex()))
 
 def gen_method_newc(nd):
-    code_append(nd, symbol_ref_add([0x5a] + gen_src_dst(nd.get('dst')), nd.get('func')))
+    code_append(nd, symbol_ref_add(nd, [0x5a] + gen_src_dst(nd.get('dst')), nd.get('func')))
 
 def gen_method_pushc(nd):
-    code_append(nd, symbol_ref_add([0x5b], nd.get('func')))
+    code_append(nd, symbol_ref_add(nd, [0x5b], nd.get('func')))
     
 def gen_str_newc(nd):
     code_append(nd, [0x5c] + gen_src_dst(nd.get('dst')) + gen_str(nd.get('val')))
@@ -251,6 +255,36 @@ def gen_node(nd):
 def func_decl(f):
     symbol_add(f.get('name'))
 
+def refs_fixup():
+    againf = True
+    while againf:
+        againf = False
+        for r in reversed(sorted(refs_dict.keys())):
+            s, rsize, nd = refs_dict[r]
+            ofs = gen_ref_ofs(symbols_dict[s], r)
+            n = len(ofs)
+            if code[r:(r + n)] != ofs:
+                code_write(r, ofs)
+            xs = rsize - n
+            if xs == 0:
+                continue
+            code_delete(r + n, xs)
+            refs_dict[r][1] = n
+            nd.set('len', str(int(nd.get('len')) - xs))
+            againf = True
+            # Adjust all symbols above shuffle point
+            for s, ofs in symbols_dict.items():
+                if ofs < r:
+                    continue
+                symbols_dict[s] = ofs - xs
+            # Adjust all references above shuffle point
+            for rr in sorted(filter(lambda x: x > r, refs_dict.keys())):
+                s, rsize, nd = refs_dict[rr]
+                del refs_dict[rr]
+                refs_dict[rr - xs] = [s, rsize, nd]
+
+listing_ofs = 0
+                
 def listing_node(nd):
     t = nd.tag
     if t == 'label':
@@ -267,12 +301,12 @@ def listing_node(nd):
                 continue
             sys.stdout.write('{}{}'.format(sep, v))
             sep = ','
-    ofs = int(nd.get('ofs'))
     n = int(nd.get('len'))
-    sys.stdout.write('\n{:08x} '.format(ofs))
+    global listing_ofs
+    sys.stdout.write('\n{:08x} '.format(listing_ofs))
     while n > 0:
-        sys.stdout.write('{:02x} '.format(code[ofs]))
-        ofs += 1
+        sys.stdout.write('{:02x} '.format(code[listing_ofs]))
+        listing_ofs += 1
         n -= 1
     sys.stdout.write('\n')
     
@@ -311,6 +345,7 @@ def process_file(infile):
             gen_array_arg_push(f)
         for s in f:
             gen_node(s)
+    refs_fixup()
     output_write(r)
     
 
