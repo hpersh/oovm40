@@ -224,3 +224,7 @@ Return the value for the given class variable; raise an exception of type
 - Syntactic sugar for setting global (i.e. module-level) variables
 - Static builds
 - Use autoconfig / automake
+- Registers
+  - Registers can hold values across statements, i.e. caching values
+    instead of repeatedly evaluating expressions/statements
+  - Compiler must track and re-use register contents    
