@@ -273,9 +273,7 @@ def refs_fixup():
             nd.set('len', nd.get('len') - xs)
             againf = True
             # Adjust all symbols above shuffle point
-            for s, ofs in symbols_dict.items():
-                if ofs < r:
-                    continue
+            for s, ofs in filter(lambda x: x[1] > r, symbols_dict.items()):
                 symbols_dict[s] = ofs - xs
             # Adjust all references above shuffle point
             for rr in sorted(filter(lambda x: x > r, refs_dict.keys())):
