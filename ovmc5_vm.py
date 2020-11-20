@@ -277,9 +277,8 @@ def refs_fixup():
                 symbols_dict[s] = ofs - xs
             # Adjust all references above shuffle point
             for rr in sorted(filter(lambda x: x > r, refs_dict.keys())):
-                s, rsize, nd = refs_dict[rr]
+                refs_dict[rr - xs] = refs_dict[rr]
                 del refs_dict[rr]
-                refs_dict[rr - xs] = [s, rsize, nd]
 
 listing_ofs = 0
                 
